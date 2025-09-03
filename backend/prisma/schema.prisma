@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Coach {
+  id          Int         @id @default(autoincrement())
+  name        String
+  fighters    Fighter[]   // One-to-many (each coach can have multiple fighters)
+  schedules   CoachSchedule[]
+  attendances Attendance[] // Track attendance records for this coach
+}
+
+model CoachSchedule {
+  id        Int     @id @default(autoincrement())
+  coach     Coach   @relation(fields: [coachId], references: [id])
+  coachId   Int
+  weekday   String  // e.g., "Monday"
+  time      String  // e.g., "18:00"
+}
+
+model Fighter {
+  id                     Int      @id @default(autoincrement())
+  name                   String
+  phone                  String?  // New field for phone number
+  coach                  Coach?   @relation(fields: [coachId], references: [id])
+  coachId                Int?     // Made optional so fighters can exist without a coach
+  subscriptionStartDate  DateTime
+  subscriptionDurationMonths Int  // e.g., 1, 2, 3...
+  totalSessionCount      Int      // 8, 10, or 12
+  sessionsLeft           Int
+  notes                  String?
+  createdAt              DateTime @default(now())
+
+  attendances            Attendance[]
+  payments               Payment[]
+}
+
+model Attendance {
+  id         Int      @id @default(autoincrement())
+  date       DateTime @default(now())
+  fighter    Fighter  @relation(fields: [fighterId], references: [id])
+  fighterId  Int
+  coach      Coach    @relation(fields: [coachId], references: [id])
+  coachId    Int
+  coachName  String   // For history record (in case coach changes later)
+  sessionType String  // "group" or "private"
+  status     String   @default("present") // "present", "absent", "late"
+  notes      String?
+  createdAt  DateTime @default(now())
+  createdBy  String?  // Admin who marked attendance
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  fighter         Fighter  @relation(fields: [fighterId], references: [id])
+  fighterId       Int
+  amount          Float
+  date            DateTime @default(now())
+  method          String   // "cash" or "bank_transfer"
+  paymentType     String   // "new_signup", "renewal", "top_up" 
+  sessionsAdded   Int      // How many sessions this payment added
+  notes           String?
+  createdBy       String   // Admin who recorded payment
+  createdAt       DateTime @default(now())
+  receiptNumber   String?  // For receipt generation
+}
