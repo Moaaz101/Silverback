@@ -1,27 +1,39 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function usePayments() {
+export function usePayments(fighterId = null) {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [summary, setSummary] = useState({ total: 0, count: 0 });
 
   // Function to fetch payments data
   const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:4000/payments');
+      const url = fighterId 
+        ? `http://localhost:4000/payments?fighterId=${fighterId}`
+        : 'http://localhost:4000/payments';
+      
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch payments');
       }
       const data = await response.json();
       setPayments(data);
+      
+      // Calculate summary statistics
+      const total = data.reduce((sum, payment) => sum + payment.amount, 0);
+      setSummary({
+        total,
+        count: data.length
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fighterId]);
 
   // Function to create a new payment
   const createPayment = useCallback(async (paymentData) => {
@@ -71,6 +83,7 @@ export function usePayments() {
     payments,
     loading,
     error,
+    summary,
     refetch: fetchPayments,
     createPayment,
     getPaymentReceipt

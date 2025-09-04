@@ -1,36 +1,61 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Clock, Phone } from 'lucide-react';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import FighterAttendanceHistory from '../components/FighterAttendanceHistory';
 import FighterPaymentHistory from '../components/FighterPaymentHistory';
+import FighterProfileHeader from '../components/FighterProfileHeader';
+import FighterEditForm from '../components/FighterEditForm';
+import FighterSettings from '../components/FighterSettings';
+import DeleteFighterModal from '../components/DeleteFighterModal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useToast } from '../contexts/ToastContext';
+import { useFighter } from '../hooks/useFighter';
 
 export default function FighterProfilePage() {
   const { id } = useParams();
-  const [fighter, setFighter] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { fighter, loading, error, updateFighter, deleteFighter, fetchFighter } = useFighter(id);
+  
   const [activeTab, setActiveTab] = useState('attendance');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const fetchFighter = async () => {
-      try {
-        const response = await fetch(`http://localhost:4000/fighters/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch fighter data');
-        }
-        const data = await response.json();
-        setFighter(data);
-      } catch (err) {
-        console.error('Error fetching fighter:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  // Handle fighter update
+  const handleUpdateFighter = async (fighterData) => {
+    setIsSubmitting(true);
+
+    try {
+      await updateFighter(fighterData);
+      // Refresh fighter data to get updated coach information
+      await fetchFighter();
+      setIsEditing(false);
+      toast.success('Fighter updated successfully');
+    } catch (err) {
+      toast.error(`Update failed: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle fighter deletion
+  const handleDeleteFighter = async () => {
+    setIsSubmitting(true);
+
+    try {
+      const success = await deleteFighter();
+      if (success) {
+        toast.success('Fighter deleted successfully');
+        navigate('/fighters');
       }
-    };
-
-    fetchFighter();
-  }, [id]);
+    } catch (err) {
+      toast.error(`Delete failed: ${err.message}`);
+      setIsDeleting(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <LoadingSpinner message="Loading fighter profile..." />;
@@ -56,107 +81,104 @@ export default function FighterProfilePage() {
     );
   }
 
+  // Render the Settings tab content
+  const renderSettingsTab = () => {
+    if (isEditing) {
+      return (
+        <FighterEditForm 
+          fighter={fighter}
+          onUpdate={handleUpdateFighter}
+          onCancel={() => setIsEditing(false)}
+          isSubmitting={isSubmitting}
+        />
+      );
+    }
+
+    return (
+      <FighterSettings 
+        onEditClick={() => setIsEditing(true)}
+        onDeleteClick={() => setIsDeleting(true)}
+      />
+    );
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Back Navigation */}
-        <Link
-          to="/fighters"
-          className="inline-flex items-center text-[#5a3660] hover:text-[#492e51] font-medium mb-6"
-        >
-          <ArrowLeft size={16} className="mr-2" />
-          Back to Fighters
-        </Link>
+        {/* Header with back button */}
+        <div className="mb-6">
+          <Link
+            to="/fighters"
+            className="inline-flex items-center text-[#5a3660] hover:text-[#492e51] font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Back to Fighters List
+          </Link>
+        </div>
 
         {/* Fighter Profile Header */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-[#492e51] to-[#5a3660] px-6 py-4 text-white">
-            <h1 className="text-2xl font-bold">{fighter.name}</h1>
-          </div>
-          <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="flex items-center">
-              <User size={20} className="text-gray-500 mr-3" />
-              <div>
-                <p className="text-sm text-gray-500">Coach</p>
-                <p className="font-medium">{fighter.coach?.name || 'Unassigned'}</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <Phone size={20} className="text-gray-500 mr-3" />
-              <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium">{fighter.phone || 'Not provided'}</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <Clock size={20} className="text-gray-500 mr-3" />
-              <div>
-                <p className="text-sm text-gray-500">Sessions Left</p>
-                <p className="font-medium">{fighter.sessionsLeft}</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <Calendar size={20} className="text-gray-500 mr-3" />
-              <div>
-                <p className="text-sm text-gray-500">Member Since</p>
-                <p className="font-medium">{new Date(fighter.createdAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        <FighterProfileHeader fighter={fighter} />
+        
         {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="flex -mb-px space-x-8">
-            <button
-              onClick={() => setActiveTab('attendance')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'attendance'
-                  ? 'border-[#5a3660] text-[#5a3660]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Attendance History
-            </button>
-            <button
-              onClick={() => setActiveTab('payments')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'payments'
-                  ? 'border-[#5a3660] text-[#5a3660]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Payment History
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'settings'
-                  ? 'border-[#5a3660] text-[#5a3660]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Settings
-            </button>
-          </nav>
-        </div>
+        <div className="bg-white rounded-lg shadow-md mt-6 overflow-hidden">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  activeTab === 'attendance'
+                    ? 'border-[#492e51] text-[#492e51]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } transition-all`}
+                onClick={() => setActiveTab('attendance')}
+              >
+                Attendance History
+              </button>
+              <button
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  activeTab === 'payments'
+                    ? 'border-[#492e51] text-[#492e51]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } transition-all`}
+                onClick={() => setActiveTab('payments')}
+              >
+                Payment History
+              </button>
+              <button
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  activeTab === 'settings'
+                    ? 'border-[#492e51] text-[#492e51]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } transition-all`}
+                onClick={() => setActiveTab('settings')}
+              >
+                Settings
+              </button>
+            </nav>
+          </div>
 
-        {/* Tab Content */}
-        <div>
-          {activeTab === 'attendance' && (
-            <FighterAttendanceHistory fighterId={fighter.id} />
-          )}
-          {activeTab === 'payments' && (
-            <FighterPaymentHistory fighterId={fighter.id} />
-          )}
-          {activeTab === 'settings' && (
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <h2 className="text-xl font-semibold mb-4">Fighter Settings</h2>
-              <p className="text-gray-500">Settings panel will be available here.</p>
-            </div>
-          )}
+          {/* Tab content */}
+          <div className="p-6">
+            {activeTab === 'attendance' && (
+              <FighterAttendanceHistory fighterId={id} />
+            )}
+            {activeTab === 'payments' && (
+              <FighterPaymentHistory fighterId={id} />
+            )}
+            {activeTab === 'settings' && renderSettingsTab()}
+          </div>
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {isDeleting && (
+        <DeleteFighterModal
+          isOpen={isDeleting}
+          isSubmitting={isSubmitting}
+          onConfirm={handleDeleteFighter}
+          onCancel={() => setIsDeleting(false)}
+          fighterName={fighter.name}
+        />
+      )}
     </div>
   );
 }

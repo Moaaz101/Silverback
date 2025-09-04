@@ -1,54 +1,16 @@
-import { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { 
   Calendar, 
   DollarSign, 
   FileText,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
   Plus
 } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
+import { usePayments } from '../hooks/usePayments';
 
 export default function FighterPaymentHistory({ fighterId }) {
   const { toast } = useToast();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [summary, setSummary] = useState({
-    total: 0,
-    count: 0
-  });
-
-  useEffect(() => {
-    fetchPaymentHistory();
-  }, [fighterId]);
-
-  const fetchPaymentHistory = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:4000/payments?fighterId=${fighterId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch payment history');
-      }
-      const data = await response.json();
-      setPayments(data);
-      
-      // Calculate summary statistics
-      const total = data.reduce((sum, payment) => sum + payment.amount, 0);
-      setSummary({
-        total,
-        count: data.length
-      });
-    } catch (err) {
-      console.error('Error fetching payment history:', err);
-      setError(err.message);
-      toast.error(`Error loading payment history: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { payments, loading, error, summary, refetch } = usePayments(fighterId);
 
   // Format date to readable format
   const formatDate = (dateString) => {
@@ -80,7 +42,7 @@ export default function FighterPaymentHistory({ fighterId }) {
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
           <button 
-            onClick={fetchPaymentHistory}
+            onClick={refetch}
             className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
           >
             Try Again
