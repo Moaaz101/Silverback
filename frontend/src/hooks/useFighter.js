@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getAuthHeaders } from '../utils/utils';
 
 export function useFighter(fighterId) {
   const [fighter, setFighter] = useState(null);
@@ -12,7 +13,9 @@ export function useFighter(fighterId) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`http://localhost:4000/fighters/${fighterId}`);
+      const response = await fetch(`http://localhost:4000/fighters/${fighterId}`, {
+        headers: getAuthHeaders(),
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch fighter data');
@@ -38,7 +41,8 @@ export function useFighter(fighterId) {
       const response = await fetch(`http://localhost:4000/fighters/${fighterId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
         },
         body: JSON.stringify(fighterData)
       });
@@ -62,7 +66,8 @@ export function useFighter(fighterId) {
     
     try {
       const response = await fetch(`http://localhost:4000/fighters/${fighterId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {

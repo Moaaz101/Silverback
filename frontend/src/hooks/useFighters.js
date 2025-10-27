@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
+import { getAuthHeaders } from "../utils/utils"
 
-export function useFighters() {
+export function useFighters(coachId = null) {
   const [fighters, setFighters] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -9,7 +10,13 @@ export function useFighters() {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch("http://localhost:4000/fighters")
+      let url = "http://localhost:4000/fighters"
+      if (coachId) {
+        url = `http://localhost:4000/fighters/by-coach/${coachId}`
+      }
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      })
       if (!response.ok) {
         throw new Error("Failed to fetch fighters")
       }
@@ -20,7 +27,7 @@ export function useFighters() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [coachId])
 
   useEffect(() => {
     fetchFighters()

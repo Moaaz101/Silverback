@@ -69,3 +69,12 @@ model Payment {
   createdAt       DateTime @default(now())
   receiptNumber   String?  // For receipt generation
 }
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // Stores bcrypt hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

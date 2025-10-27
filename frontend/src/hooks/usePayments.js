@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { getAuthHeaders } from '../utils/utils';
 
 export function usePayments(fighterId = null) {
   const [payments, setPayments] = useState([]);
@@ -15,7 +16,9 @@ export function usePayments(fighterId = null) {
         ? `http://localhost:4000/payments?fighterId=${fighterId}`
         : 'http://localhost:4000/payments';
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch payments');
       }
@@ -42,6 +45,7 @@ export function usePayments(fighterId = null) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders()
         },
         body: JSON.stringify(paymentData),
       });
@@ -62,7 +66,9 @@ export function usePayments(fighterId = null) {
   // Function to get a specific payment receipt
   const getPaymentReceipt = useCallback(async (paymentId) => {
     try {
-      const response = await fetch(`http://localhost:4000/payments/${paymentId}/receipt`);
+      const response = await fetch(`http://localhost:4000/payments/${paymentId}/receipt`, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch payment receipt');
       }

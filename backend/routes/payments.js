@@ -215,4 +215,74 @@ router.get('/:id/receipt', async (req, res) => {
   }
 });
 
+
+router.get('/earnings/by-coach', async (req, res) => {
+  const prisma = req.prisma;
+  const { month, year } = req.query;
+
+  try {
+    // 1. Define the date range for the filter
+    let startDate, endDate;
+    if (month && year) {
+      // Month is 1-indexed, but Date constructor is 0-indexed
+      startDate = new Date(Date.UTC(year, month - 1, 1));
+      endDate = new Date(Date.UTC(year, month, 1));
+    }
+
+    // 2. Fetch all payments within the date range that are linked to a coach
+    const payments = await prisma.payment.findMany({
+      where: {
+        // Apply date filter if it exists
+        ...(startDate && endDate && {
+          date: {
+            gte: startDate,
+            lt: endDate,
+          },
+        }),
+        // Ensure the payment is linked to a fighter who has a coach
+        fighter: {
+          coachId: {
+            not: null,
+          },
+        },
+      },
+      include: {
+        fighter: {
+          include: {
+            coach: true, // Include the coach details
+          },
+        },
+      },
+    });
+
+    // 3. Process the payments to calculate earnings per coach
+    const earningsByCoach = payments.reduce((acc, payment) => {
+      const coach = payment.fighter?.coach;
+      if (!coach) return acc; // Skip if no coach is associated
+
+      if (!acc[coach.id]) {
+        acc[coach.id] = {
+          coachId: coach.id,
+          coachName: coach.name,
+          totalEarnings: 0,
+          paymentCount: 0,
+        };
+      }
+
+      acc[coach.id].totalEarnings += payment.amount;
+      acc[coach.id].paymentCount += 1;
+
+      return acc;
+    }, {});
+
+    // 4. Convert the results object to an array and send response
+    res.json(Object.values(earningsByCoach));
+
+  } catch (error) {
+    console.error('Error fetching coach earnings:', error);
+    res.status(500).json({ error: 'Failed to fetch coach earnings' });
+  }
+});
+
+
 export default router;

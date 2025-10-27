@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
+import { getAuthHeaders } from "../utils/utils"
 
 export function useCoaches() {
   const [coaches, setCoaches] = useState([])
@@ -9,7 +10,9 @@ export function useCoaches() {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch("http://localhost:4000/coaches")
+      const response = await fetch("http://localhost:4000/coaches", {
+        headers: getAuthHeaders(),
+      })
       if (!response.ok) {
         throw new Error("Failed to fetch coaches")
       }

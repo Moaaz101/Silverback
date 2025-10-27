@@ -20,3 +20,11 @@ export const formatTime = (time24h) => {
     return time24h; // Return original format if parsing fails
   }
 };
+
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('authToken');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+};

@@ -1,165 +1,160 @@
-import { useState, useEffect } from "react"
-import { Calendar, Clock, Check, User, Users, UserCheck, CalendarDays, AlertTriangle, CheckCircle, XCircle, Clock as ClockIcon } from "lucide-react"
-import LoadingSpinner from "../components/LoadingSpinner"
-import ErrorDisplay from "../components/ErrorDisplay"
-import { useToast } from "../contexts/ToastContext"
-import { formatTime } from "../utils/utils.js"
+import { useState, useEffect } from "react";
+import { 
+  Calendar, 
+  Clock, 
+  Check, 
+  Users, 
+  UserCheck, 
+  CalendarDays, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  Clock as ClockIcon 
+} from "lucide-react";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorDisplay from "../components/ErrorDisplay";
+import { useToast } from "../contexts/ToastContext";
+import { useAttendance } from "../hooks/useAttendance";
+import { formatTime } from "../utils/utils.js";
 
 export default function AttendancePage() {
-  const { toast } = useToast()
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [coachesWithSessions, setCoachesWithSessions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [attendanceData, setAttendanceData] = useState({})
-  const [showAdminOverride, setShowAdminOverride] = useState(false)
-  const [adminOverride, setAdminOverride] = useState(false)
+  const { toast } = useToast();
+  const { loading, error, fetchDailyOverview, submitBulkAttendance } = useAttendance();
+  
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [coachesWithSessions, setCoachesWithSessions] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [attendanceData, setAttendanceData] = useState({});
+  const [showAdminOverride, setShowAdminOverride] = useState(false);
+  const [adminOverride, setAdminOverride] = useState(false);
 
-  const fetchDailyOverview = async (date) => {
+  /**
+   * Load daily overview data
+   */
+  const loadDailyOverview = async (date) => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await fetch(`http://localhost:4000/attendance/daily-overview?date=${date}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch daily overview')
-      }
-      
-      const data = await response.json()
-      setCoachesWithSessions(data)
+      const data = await fetchDailyOverview(date);
+      setCoachesWithSessions(data);
       
       // Initialize attendance data with existing records
-      const initialAttendanceData = {}
+      const initialAttendanceData = {};
       data.forEach(coach => {
         coach.fighters.forEach(fighter => {
-          const existingAttendance = fighter.attendances[0] // Should only be one per day
+          const existingAttendance = fighter.attendances[0]; // Should only be one per day
           if (existingAttendance) {
-            initialAttendanceData[fighter.id] = existingAttendance.status
+            initialAttendanceData[fighter.id] = existingAttendance.status;
           } else {
-            initialAttendanceData[fighter.id] = 'not_marked'
+            initialAttendanceData[fighter.id] = 'not_marked';
           }
-        })
-      })
-      setAttendanceData(initialAttendanceData)
-      
+        });
+      });
+      setAttendanceData(initialAttendanceData);
     } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+      console.error('Error loading daily overview:', err);
+      toast.error('Failed to load attendance data');
     }
-  }
+  };
 
+  /**
+   * Load data when date changes
+   */
   useEffect(() => {
-    fetchDailyOverview(selectedDate)
-  }, [selectedDate])
+    loadDailyOverview(selectedDate);
+  }, [selectedDate]);
 
+  /**
+   * Handle attendance status change
+   */
   const handleAttendanceChange = (fighterId, status) => {
     setAttendanceData(prev => ({
       ...prev,
       [fighterId]: status
-    }))
-  }
+    }));
+  };
 
+  /**
+   * Get status color classes
+   */
   const getStatusColor = (status) => {
     switch (status) {
       case 'present':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'absent':
-        return 'bg-red-100 text-red-800 border-red-200'
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'late':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
-        return 'bg-gray-100 text-gray-600 border-gray-200'
+        return 'bg-gray-100 text-gray-600 border-gray-200';
     }
-  }
+  };
 
-  const submitAttendance = async () => {
+  /**
+   * Submit attendance records
+   */
+  const handleSubmitAttendance = async () => {
     try {
-      setSubmitting(true)
+      setSubmitting(true);
       
       // Create attendance records for changed statuses
-      const attendanceRecords = []
+      const attendanceRecords = [];
       Object.entries(attendanceData).forEach(([fighterId, status]) => {
         if (status !== 'not_marked') {
           attendanceRecords.push({
             fighterId: parseInt(fighterId),
             status: status,
             sessionType: 'group',
-            createdBy: 'admin' // You might want to make this dynamic
-          })
+            createdBy: 'admin'
+          });
         }
-      })
+      });
 
       if (attendanceRecords.length === 0) {
-        toast.warning('Please mark attendance for at least one fighter')
-        return
+        toast.warning('Please mark attendance for at least one fighter');
+        return;
       }
 
-      const response = await fetch('http://localhost:4000/attendance/bulk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          attendanceRecords,
-          date: selectedDate,
-          adminOverride: adminOverride
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit attendance')
-      }
-
-      const results = await response.json()
+      const result = await submitBulkAttendance(attendanceRecords, selectedDate, adminOverride);
       
-      // Check for errors in individual records
-      const errors = results.filter(result => !result.success)
-      const successes = results.filter(result => result.success)
-
-      if (errors.length > 0) {
-        // Show detailed error information
-        const errorMessages = errors.map(error => 
-          `${error.fighterId}: ${error.error}`
-        ).join(', ')
-        
-        if (errors.some(error => error.error.includes('no sessions left'))) {
-          setShowAdminOverride(true)
-          toast.warning('Some fighters have no sessions left. Enable "Admin Override" to proceed anyway.', {
-            duration: 8000
-          })
-          return
-        } else {
-          toast.error(`Errors occurred: ${errorMessages}`, {
-            duration: 8000
-          })
-        }
+      // Handle results
+      if (result.hasNoSessionsError && !adminOverride) {
+        setShowAdminOverride(true);
+        toast.warning(
+          'Some fighters have no sessions left. Enable "Admin Override" to proceed anyway.',
+          { duration: 8000 }
+        );
+        return;
       }
 
-      if (successes.length > 0) {
-        toast.success(`Successfully updated attendance for ${successes.length} fighter(s)`)
+      if (result.errors.length > 0) {
+        const errorMessages = result.errors
+          .map(error => `${error.fighterId}: ${error.error}`)
+          .join(', ');
+        toast.error(`Errors occurred: ${errorMessages}`, { duration: 8000 });
+      }
+
+      if (result.successes.length > 0) {
+        toast.success(`Successfully updated attendance for ${result.successes.length} fighter(s)`);
       }
 
       // Refresh the data
-      await fetchDailyOverview(selectedDate)
-      setShowAdminOverride(false)
-      setAdminOverride(false)
+      await loadDailyOverview(selectedDate);
+      setShowAdminOverride(false);
+      setAdminOverride(false);
       
     } catch (error) {
-      console.error('Error submitting attendance:', error)
-      toast.error('Failed to submit attendance: ' + error.message)
+      console.error('Error submitting attendance:', error);
+      toast.error('Failed to submit attendance: ' + error.message);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
-  if (loading) {
-    return <LoadingSpinner message="Loading daily attendance..." />
+  if (loading && coachesWithSessions.length === 0) {
+    return <LoadingSpinner message="Loading daily attendance..." />;
   }
 
   if (error) {
-    return <ErrorDisplay error={error} title="Error loading attendance" />
+    return <ErrorDisplay error={error} title="Error loading attendance" />;
   }
 
   return (
@@ -170,6 +165,7 @@ export default function AttendancePage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Attendance</h1>
+              <p className="text-gray-500 mt-1">Track daily attendance for all sessions</p>
             </div>
             
             {/* Date Picker and Submit Button */}
@@ -201,12 +197,21 @@ export default function AttendancePage() {
               )}
               
               <button
-                onClick={submitAttendance}
-                disabled={submitting}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-6 py-3 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-medium shadow-lg hover:shadow-xl border border-[#5a3660]/20 disabled:opacity-50 whitespace-nowrap"
+                onClick={handleSubmitAttendance}
+                disabled={submitting || loading}
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-6 py-3 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-medium shadow-lg hover:shadow-xl border border-[#5a3660]/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
-                <Check className="w-5 h-5" />
-                <span>{submitting ? 'Submitting...' : 'Submit Attendance'}</span>
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" />
+                    <span>Submit Attendance</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -236,7 +241,15 @@ export default function AttendancePage() {
                 <Clock className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No sessions scheduled</h3>
-              <p className="text-gray-500">There are no coaches with sessions scheduled for {new Date(selectedDate).toLocaleDateString()}.</p>
+              <p className="text-gray-500">
+                There are no coaches with sessions scheduled for{' '}
+                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}.
+              </p>
             </div>
           </div>
         ) : (
@@ -244,7 +257,7 @@ export default function AttendancePage() {
             {coachesWithSessions.map((coach) => (
               <div key={coach.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Coach Header */}
-                <div className="bg-[#492e51] text-white p-6">
+                <div className="bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -254,8 +267,9 @@ export default function AttendancePage() {
                         <h2 className="text-xl font-bold">{coach.name}</h2>
                         <div className="flex items-center space-x-4 mt-1">
                           {coach.schedules.map((schedule, index) => (
-                            <span key={index} className="text-white/80 text-sm">
-                              {schedule.weekday} at {formatTime(schedule.time)}
+                            <span key={index} className="text-white/80 text-sm flex items-center space-x-1">
+                              <Clock className="w-4 h-4" />
+                              <span>{schedule.weekday} at {formatTime(schedule.time)}</span>
                             </span>
                           ))}
                         </div>
@@ -273,19 +287,27 @@ export default function AttendancePage() {
                   <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {coach.fighters.map((fighter) => (
-                        <div key={fighter.id} className="border border-gray-200 rounded-lg p-4">
+                        <div 
+                          key={fighter.id} 
+                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        >
                           <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <h4 className="font-semibold text-gray-900">{fighter.name}</h4>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 truncate">{fighter.name}</h4>
                               <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                <span>Sessions left: {fighter.sessionsLeft}</span>
+                                <span>Sessions: {fighter.sessionsLeft}</span>
                                 {fighter.sessionsLeft === 0 && (
-                                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                                  <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
                                 )}
                               </div>
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(attendanceData[fighter.id])}`}>
-                              {attendanceData[fighter.id] === 'not_marked' ? 'Not marked' : attendanceData[fighter.id]}
+                            <span 
+                              className={`px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ml-2 ${getStatusColor(attendanceData[fighter.id])}`}
+                            >
+                              {attendanceData[fighter.id] === 'not_marked' 
+                                ? 'Not marked' 
+                                : attendanceData[fighter.id].charAt(0).toUpperCase() + attendanceData[fighter.id].slice(1)
+                              }
                             </span>
                           </div>
                           
@@ -293,10 +315,11 @@ export default function AttendancePage() {
                           <div className="flex space-x-2">
                             <button
                               onClick={() => handleAttendanceChange(fighter.id, 'present')}
-                              className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors flex items-center justify-center space-x-1 ${
+                              disabled={loading || submitting}
+                              className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed ${
                                 attendanceData[fighter.id] === 'present'
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-green-100'
+                                  ? 'bg-green-500 text-white shadow-md'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700'
                               }`}
                             >
                               <CheckCircle className="w-3 h-3" />
@@ -304,10 +327,11 @@ export default function AttendancePage() {
                             </button>
                             <button
                               onClick={() => handleAttendanceChange(fighter.id, 'absent')}
-                              className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors flex items-center justify-center space-x-1 ${
+                              disabled={loading || submitting}
+                              className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed ${
                                 attendanceData[fighter.id] === 'absent'
-                                  ? 'bg-red-500 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-red-100'
+                                  ? 'bg-red-500 text-white shadow-md'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700'
                               }`}
                             >
                               <XCircle className="w-3 h-3" />
@@ -315,10 +339,11 @@ export default function AttendancePage() {
                             </button>
                             <button
                               onClick={() => handleAttendanceChange(fighter.id, 'late')}
-                              className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors flex items-center justify-center space-x-1 ${
+                              disabled={loading || submitting}
+                              className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed ${
                                 attendanceData[fighter.id] === 'late'
-                                  ? 'bg-yellow-500 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-yellow-100'
+                                  ? 'bg-yellow-500 text-white shadow-md'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-yellow-100 hover:text-yellow-700'
                               }`}
                             >
                               <ClockIcon className="w-3 h-3" />
@@ -341,5 +366,5 @@ export default function AttendancePage() {
         )}
       </div>
     </div>
-  )
+  );
 }

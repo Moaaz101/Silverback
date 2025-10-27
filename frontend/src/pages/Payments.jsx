@@ -8,6 +8,8 @@ import {
 import LoadingSpinner from "../components/LoadingSpinner";
 import NewPaymentForm from "../components/NewPaymentForm";
 import { usePayments } from "../hooks/usePayments";
+import CoachEarnings from "../components/CoachEarnings"; // ADD THIS IMPORT
+
 
 export default function Payments() {
   const navigate = useNavigate();
@@ -69,6 +71,8 @@ export default function Payments() {
             <span>New Payment</span>
           </button>
         </div>
+
+        <CoachEarnings />
         
         {/* Recent Payments */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
