@@ -1,7 +1,5 @@
 export default function CoachSummaryBox({ coaches }) {
   const totalCoaches = coaches.length
-  const coachesWithSchedules = coaches.filter((c) => c.schedules && c.schedules.length > 0).length
-  const coachesWithoutSchedules = coaches.filter((c) => !c.schedules || c.schedules.length === 0).length
   const totalFighters = coaches.reduce((sum, coach) => sum + (coach.fighters?.length || 0), 0)
 
   const summaryStats = [
@@ -10,18 +8,6 @@ export default function CoachSummaryBox({ coaches }) {
       label: "Total Coaches",
       bgColor: "bg-[#492e51]/5",
       textColor: "text-[#492e51]"
-    },
-    {
-      value: coachesWithSchedules,
-      label: "With Schedules",
-      bgColor: "bg-green-50",
-      textColor: "text-green-600"
-    },
-    {
-      value: coachesWithoutSchedules,
-      label: "No Schedule",
-      bgColor: "bg-yellow-50",
-      textColor: "text-yellow-600"
     },
     {
       value: totalFighters,
@@ -38,7 +24,7 @@ export default function CoachSummaryBox({ coaches }) {
   return (
     <div className="mt-12 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         {summaryStats.map((stat, index) => (
           <div key={index} className={`text-center p-4 ${stat.bgColor} rounded-xl`}>
             <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>

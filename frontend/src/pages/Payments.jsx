@@ -8,14 +8,15 @@ import {
 import LoadingSpinner from "../components/LoadingSpinner";
 import NewPaymentForm from "../components/NewPaymentForm";
 import { usePayments } from "../hooks/usePayments";
-import CoachEarnings from "../components/CoachEarnings"; // ADD THIS IMPORT
+import CoachEarnings from "../components/CoachEarnings";
+import { useAuth } from "../contexts/AuthContext";
 
 
 export default function Payments() {
   const navigate = useNavigate();
   const { payments, loading, error, refetch } = usePayments();
   const [showNewPaymentForm, setShowNewPaymentForm] = useState(false);
-  const [currentAdmin, setCurrentAdmin] = useState("Admin");
+  const { user } = useAuth();
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -50,7 +51,7 @@ export default function Payments() {
           setShowNewPaymentForm(false);
           refetch();
         }}
-        currentAdmin={currentAdmin}
+        currentAdmin={user.username}
       />
     );
   }

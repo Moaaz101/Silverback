@@ -7,40 +7,15 @@ import EmptyState from "../components/EmptyState"
 import Modal from "../components/Modal"
 import CreateFighterForm from "../components/CreateFighterForm"
 import { useFighters } from "../hooks/useFighters"
-import { useToast } from "../contexts/ToastContext"
 import { User, Plus, UserPlus  } from "lucide-react"
 import { useCoaches } from "../hooks/useCoaches"
 
 export default function FightersPage() {
-  const { toast } = useToast()
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const { coaches } = useCoaches()
   const [selectedCoachId, setSelectedCoachId] = useState("")
-  const { fighters, loading, error, refetch } = useFighters(selectedCoachId || null); 
+  const { fighters, loading, error } = useFighters(selectedCoachId || null); 
 
-  const handleCreateFighter = async (fighterData) => {
-    try {
-      const response = await fetch("http://localhost:4000/fighters", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(fighterData),
-      })
 
-      if (!response.ok) {
-        throw new Error("Failed to create fighter")
-      }
-
-      // Close modal and refresh the fighters list
-      setIsCreateModalOpen(false)
-      await refetch() // Await the refetch to ensure it completes
-      toast.success("Fighter created successfully!")
-    } catch (error) {
-      console.error("Error creating fighter:", error)
-      toast.error("Failed to create fighter: " + error.message)
-    }
-  }
 
   if (loading) {
     return <LoadingSpinner message="Loading fighters..." />
@@ -104,18 +79,6 @@ export default function FightersPage() {
 
         {/* Stats Summary */}
         <SummaryBox fighters={fighters} />
-        
-        {/* Create Fighter Modal */}
-        <Modal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          title="Create New Fighter"
-        >
-          <CreateFighterForm
-            onSubmit={handleCreateFighter}
-            onCancel={() => setIsCreateModalOpen(false)}
-          />
-        </Modal>
       </div>
     </div>
   )

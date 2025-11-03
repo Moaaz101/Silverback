@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       return { 
         success: false, 
-        error: error.message || 'Login failed. Please try again.' 
+        error: 'Login failed. Please try again.' 
       };
     }
   };

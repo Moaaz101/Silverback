@@ -16,29 +16,30 @@ import {
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useToast } from "../contexts/ToastContext";
 import { useCoaches } from "../hooks/useCoaches";
-import { usePayments } from "../hooks/usePayments"; // Import the hook
+import { usePayments } from "../hooks/usePayments";
+import { useFighters } from "../hooks/useFighters"; // Import the hook
 
 export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin }) {
   const { toast } = useToast();
   const { coaches } = useCoaches();
-  const { createPayment } = usePayments(); // Use the hook
+  const { createPayment } = usePayments();
+  const { fighters, loading: fightersLoading, error: fightersError, refetch: refetchFighters } = useFighters(); // Use the hook
+  
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fighters, setFighters] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredFighters, setFilteredFighters] = useState([]);
   
   // Form state remains the same
   const [formData, setFormData] = useState({
-    paymentType: 'new_signup', // Default to new signup
+    paymentType: 'new_signup',
     fighterId: '',
     amount: '',
-    method: 'cash', // Default to cash
-    sessionsAdded: 12, // Default
+    method: 'cash',
+    sessionsAdded: 12,
     notes: '',
     createdBy: currentAdmin,
     
-    // For new fighter creation
     fighterData: {
       name: '',
       phone: '',
@@ -49,12 +50,12 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
     }
   });
   
-  // Fetch fighters for selection on existing fighter flows
+  // Refetch fighters when payment type changes to existing fighter flows
   useEffect(() => {
     if (formData.paymentType !== 'new_signup') {
-      fetchFighters();
+      refetchFighters();
     }
-  }, [formData.paymentType]);
+  }, [formData.paymentType, refetchFighters]);
   
   // Filter fighters based on search term
   useEffect(() => {
@@ -67,20 +68,6 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
       setFilteredFighters(filtered);
     }
   }, [searchTerm, fighters]);
-  
-  const fetchFighters = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/fighters');
-      if (!response.ok) {
-        throw new Error('Failed to fetch fighters');
-      }
-      const data = await response.json();
-      setFighters(data);
-      setFilteredFighters(data);
-    } catch (err) {
-      toast.error(`Error loading fighters: ${err.message}`);
-    }
-  };
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -106,7 +93,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
       ...prev,
       fighterId
     }));
-    setStep(3); // Move to payment details after fighter selection
+    setStep(3);
   };
   
   const handleSubmit = async (e) => {
@@ -114,7 +101,6 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
     setIsSubmitting(true);
     
     try {
-      // Prepare the data based on payment type
       let paymentData;
       
       if (formData.paymentType === 'new_signup') {
@@ -148,7 +134,6 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         };
       }
       
-      // Use the createPayment function from the hook
       const payment = await createPayment(paymentData);
       
       toast.success('Payment recorded successfully!');
@@ -431,7 +416,15 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
       
       {/* Fighters list */}
       <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
-        {filteredFighters.length === 0 ? (
+        {fightersLoading ? (
+          <div className="p-6 text-center">
+            <LoadingSpinner message="Loading fighters..." />
+          </div>
+        ) : fightersError ? (
+          <div className="p-6 text-center text-red-500">
+            Error loading fighters: {fightersError}
+          </div>
+        ) : filteredFighters.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
             No fighters found. Please try a different search term.
           </div>

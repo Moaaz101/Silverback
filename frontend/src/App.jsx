@@ -15,7 +15,6 @@ import Coaches from './pages/Coaches';
 import Attendance from './pages/Attendance';
 import Payments from './pages/Payments';
 import PaymentReceiptPage from './pages/PaymentReceiptPage';
-
 /**
  * Main App Component
  * Implements authentication with protected routes
