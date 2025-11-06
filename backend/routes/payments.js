@@ -1,6 +1,61 @@
 import { Router } from "express";
 const router = Router();
 
+// Validation helper functions
+const validatePaymentData = (data) => {
+  const errors = [];
+  const validPaymentTypes = ['new_signup', 'renewal', 'top_up'];
+  const validPaymentMethods = ['cash', 'card', 'bank_transfer'];
+  
+  if (!data.amount || isNaN(parseFloat(data.amount)) || parseFloat(data.amount) <= 0) {
+    errors.push('Amount must be a positive number');
+  }
+  
+  if (!data.method || !validPaymentMethods.includes(data.method)) {
+    errors.push(`Payment method must be one of: ${validPaymentMethods.join(', ')}`);
+  }
+  
+  if (!data.paymentType || !validPaymentTypes.includes(data.paymentType)) {
+    errors.push(`Payment type must be one of: ${validPaymentTypes.join(', ')}`);
+  }
+  
+  if (!data.sessionsAdded || isNaN(parseInt(data.sessionsAdded)) || parseInt(data.sessionsAdded) <= 0) {
+    errors.push('Sessions added must be a positive integer');
+  }
+  
+  if (!data.createdBy || typeof data.createdBy !== 'string' || data.createdBy.trim().length === 0) {
+    errors.push('Created by is required');
+  }
+  
+  // Validate based on payment type
+  if (data.paymentType === 'new_signup') {
+    if (!data.fighterData) {
+      errors.push('Fighter data is required for new signup');
+    } else {
+      if (!data.fighterData.name || typeof data.fighterData.name !== 'string') {
+        errors.push('Fighter name is required');
+      }
+      if (!data.fighterData.phone || typeof data.fighterData.phone !== 'string') {
+        errors.push('Fighter phone is required');
+      }
+    }
+  } else if (data.paymentType === 'renewal' || data.paymentType === 'top_up') {
+    if (!data.fighterId || isNaN(parseInt(data.fighterId)) || parseInt(data.fighterId) <= 0) {
+      errors.push('Valid fighter ID is required for renewal or top-up');
+    }
+  }
+  
+  return errors;
+};
+
+const validateId = (id) => {
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId) || parsedId <= 0) {
+    return { valid: false, error: 'ID must be a positive integer' };
+  }
+  return { valid: true, id: parsedId };
+};
+
 // Helper function to generate receipt number
 function generateReceiptNumber() {
   const date = new Date();
@@ -13,19 +68,25 @@ function generateReceiptNumber() {
 
 // POST create payment with fighter record
 router.post('/', async (req, res) => {
-  const prisma = req.prisma;
-  const { 
-    fighterId, 
-    fighterData,  // For new fighters
-    amount, 
-    method, 
-    paymentType, 
-    sessionsAdded,
-    notes,
-    createdBy
-  } = req.body;
-  
   try {
+    const prisma = req.prisma;
+    const { 
+      fighterId, 
+      fighterData,  // For new fighters
+      amount, 
+      method, 
+      paymentType, 
+      sessionsAdded,
+      notes,
+      createdBy
+    } = req.body;
+    
+    // Validate payment data
+    const validationErrors = validatePaymentData(req.body);
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ errors: validationErrors });
+    }
+    
     // Use transaction to ensure both fighter and payment are created/updated
     const result = await prisma.$transaction(async (tx) => {
       let targetFighterId = fighterId;
@@ -101,19 +162,19 @@ router.post('/', async (req, res) => {
       return payment;
     });
     
-    res.json(result);
+    res.status(201).json(result);
   } catch (error) {
     console.error('Payment error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to process payment' });
   }
 });
 
 // GET all payments with fighter details
 router.get('/', async (req, res) => {
-  const prisma = req.prisma;
-  const { startDate, endDate, fighterId } = req.query;
-  
   try {
+    const prisma = req.prisma;
+    const { startDate, endDate, fighterId } = req.query;
+    
     // Build the where clause based on filters
     const whereClause = {};
     
@@ -123,12 +184,18 @@ router.get('/', async (req, res) => {
       
       if (startDate) {
         const startDateObj = new Date(startDate);
+        if (isNaN(startDateObj.getTime())) {
+          return res.status(400).json({ error: 'Invalid start date format' });
+        }
         startDateObj.setHours(0, 0, 0, 0);
         whereClause.date.gte = startDateObj;
       }
       
       if (endDate) {
         const endDateObj = new Date(endDate);
+        if (isNaN(endDateObj.getTime())) {
+          return res.status(400).json({ error: 'Invalid end date format' });
+        }
         endDateObj.setHours(23, 59, 59, 999);
         whereClause.date.lte = endDateObj;
       }
@@ -136,7 +203,11 @@ router.get('/', async (req, res) => {
     
     // Fighter filter
     if (fighterId) {
-      whereClause.fighterId = parseInt(fighterId);
+      const validation = validateId(fighterId);
+      if (!validation.valid) {
+        return res.status(400).json({ error: 'Invalid fighter ID' });
+      }
+      whereClause.fighterId = validation.id;
     }
     
     const payments = await prisma.payment.findMany({
@@ -152,18 +223,22 @@ router.get('/', async (req, res) => {
     res.json(payments);
   } catch (error) {
     console.error('Error fetching payments:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch payments' });
   }
 });
 
 // GET payment by ID
 router.get('/:id', async (req, res) => {
-  const prisma = req.prisma;
-  const paymentId = parseInt(req.params.id);
-  
   try {
+    const prisma = req.prisma;
+    
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
     const payment = await prisma.payment.findUnique({
-      where: { id: paymentId },
+      where: { id: validation.id },
       include: { fighter: true }
     });
     
@@ -173,18 +248,23 @@ router.get('/:id', async (req, res) => {
     
     res.json(payment);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching payment:', error);
+    res.status(500).json({ error: 'Failed to fetch payment' });
   }
 });
 
 // GET payment receipt
 router.get('/:id/receipt', async (req, res) => {
-  const prisma = req.prisma;
-  const paymentId = parseInt(req.params.id);
-  
   try {
+    const prisma = req.prisma;
+    
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
     const payment = await prisma.payment.findUnique({
-      where: { id: paymentId },
+      where: { id: validation.id },
       include: { fighter: true }
     });
     
@@ -211,16 +291,32 @@ router.get('/:id/receipt', async (req, res) => {
     
     res.json(receipt);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching receipt:', error);
+    res.status(500).json({ error: 'Failed to fetch receipt' });
   }
 });
 
 
 router.get('/earnings/by-coach', async (req, res) => {
-  const prisma = req.prisma;
-  const { month, year } = req.query;
-
   try {
+    const prisma = req.prisma;
+    const { month, year } = req.query;
+
+    // Validate month and year if provided
+    if (month) {
+      const monthNum = parseInt(month);
+      if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+        return res.status(400).json({ error: 'Month must be between 1 and 12' });
+      }
+    }
+    
+    if (year) {
+      const yearNum = parseInt(year);
+      if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
+        return res.status(400).json({ error: 'Invalid year' });
+      }
+    }
+
     // 1. Define the date range for the filter
     let startDate, endDate;
     if (month && year) {

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getAuthHeaders } from '../utils/utils';
+import { buildApiUrl } from '../config/api';
 
 export function useAttendance() {
   const [loading, setLoading] = useState(false);
@@ -16,7 +17,7 @@ export function useAttendance() {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:4000/attendance/daily-overview?date=${date}`,
+        buildApiUrl(`/attendance/daily-overview?date=${date}`),
         {
           headers: getAuthHeaders(),
         }
@@ -49,7 +50,7 @@ export function useAttendance() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:4000/attendance/bulk', {
+      const response = await fetch(buildApiUrl('/attendance/bulk'), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -100,7 +101,7 @@ export function useAttendance() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:4000/attendance', {
+      const response = await fetch(buildApiUrl('/attendance'), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -140,7 +141,7 @@ export function useAttendance() {
       setError(null);
 
       // Build query URL with optional date filters
-      let url = `http://localhost:4000/attendance/${fighterId}`;
+      let url = buildApiUrl(`/attendance/${fighterId}`);
       const params = new URLSearchParams();
       
       if (startDate) {

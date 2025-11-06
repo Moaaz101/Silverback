@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "build": "npx prisma generate && npx prisma migrate deploy",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backup": "node scripts/backup.js create",
+    "backup:list": "node scripts/backup.js list",
+    "backup:restore": "node scripts/backup.js restore"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -20,6 +25,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.10.1",
     "sqlite3": "^5.1.7"

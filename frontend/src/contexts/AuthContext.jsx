@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { buildApiUrl } from '../config/api';
 
 const AuthContext = createContext(null);
 
@@ -12,7 +13,7 @@ export function AuthProvider({ children }) {
    */
   const verifyToken = useCallback(async (token) => {
     try {
-      const response = await fetch('http://localhost:4000/auth/verify', {
+      const response = await fetch(buildApiUrl('/auth/verify'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -59,7 +60,7 @@ export function AuthProvider({ children }) {
    */
   const login = async (username, password) => {
     try {
-      const response = await fetch('http://localhost:4000/auth/login', {
+      const response = await fetch(buildApiUrl('/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +99,7 @@ export function AuthProvider({ children }) {
       
       if (token) {
         // Call logout endpoint (optional, for logging purposes)
-        await fetch('http://localhost:4000/auth/logout', {
+        await fetch(buildApiUrl('/auth/logout'), {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -124,7 +125,7 @@ export function AuthProvider({ children }) {
     try {
       const token = localStorage.getItem('authToken');
       
-      const response = await fetch('http://localhost:4000/auth/change-password', {
+      const response = await fetch(buildApiUrl('/auth/change-password'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

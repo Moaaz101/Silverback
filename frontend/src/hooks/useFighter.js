@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthHeaders } from '../utils/utils';
+import { buildApiUrl } from '../config/api';
 
 export function useFighter(fighterId) {
   const [fighter, setFighter] = useState(null);
@@ -13,7 +14,7 @@ export function useFighter(fighterId) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`http://localhost:4000/fighters/${fighterId}`, {
+      const response = await fetch(buildApiUrl(`/fighters/${fighterId}`), {
         headers: getAuthHeaders(),
       });
       
@@ -38,7 +39,7 @@ export function useFighter(fighterId) {
     if (!fighterId) return null;
     
     try {
-      const response = await fetch(`http://localhost:4000/fighters/${fighterId}`, {
+      const response = await fetch(buildApiUrl(`/fighters/${fighterId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +66,7 @@ export function useFighter(fighterId) {
     if (!fighterId) return false;
     
     try {
-      const response = await fetch(`http://localhost:4000/fighters/${fighterId}`, {
+      const response = await fetch(buildApiUrl(`/fighters/${fighterId}`), {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

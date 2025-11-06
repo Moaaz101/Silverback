@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { getAuthHeaders } from "../utils/utils";
+import { buildApiUrl } from "../config/api";
 
 export function useCoaches() {
   const [coaches, setCoaches] = useState([]);
@@ -13,7 +14,7 @@ export function useCoaches() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("http://localhost:4000/coaches", {
+      const response = await fetch(buildApiUrl("/coaches"), {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
@@ -41,7 +42,7 @@ export function useCoaches() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("http://localhost:4000/coaches", {
+      const response = await fetch(buildApiUrl("/coaches"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(coachData),
@@ -78,7 +79,7 @@ export function useCoaches() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`http://localhost:4000/coaches/${coachId}`, {
+      const response = await fetch(buildApiUrl(`/coaches/${coachId}`), {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(coachData),
@@ -116,7 +117,7 @@ export function useCoaches() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`http://localhost:4000/coaches/${coachId}`, {
+      const response = await fetch(buildApiUrl(`/coaches/${coachId}`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });

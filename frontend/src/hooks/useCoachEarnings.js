@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthHeaders } from '../utils/utils';
+import { buildApiUrl } from '../config/api';
 
 export function useCoachEarnings(month, year) {
   const [earnings, setEarnings] = useState([]);
@@ -12,7 +13,7 @@ export function useCoachEarnings(month, year) {
       setError(null);
 
       // Construct the URL with query parameters
-      const url = new URL('http://localhost:4000/payments/earnings/by-coach');
+      const url = new URL(buildApiUrl('/payments/earnings/by-coach'));
       if (month && year) {
         url.searchParams.append('month', month);
         url.searchParams.append('year', year);

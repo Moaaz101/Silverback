@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { getAuthHeaders } from "../utils/utils"
+import { buildApiUrl } from "../config/api"
 
 export function useFighters(coachId = null) {
   const [fighters, setFighters] = useState([])
@@ -10,9 +11,9 @@ export function useFighters(coachId = null) {
     try {
       setLoading(true)
       setError(null)
-      let url = "http://localhost:4000/fighters"
+      let url = buildApiUrl("/fighters")
       if (coachId) {
-        url = `http://localhost:4000/fighters/by-coach/${coachId}`
+        url = buildApiUrl(`/fighters/by-coach/${coachId}`)
       }
       const response = await fetch(url, {
         headers: getAuthHeaders(),

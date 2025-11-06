@@ -1,6 +1,49 @@
 import { Router } from 'express';
 const router = Router();
 
+// Validation helper functions
+const validateId = (id) => {
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId) || parsedId <= 0) {
+    return { valid: false, error: 'ID must be a positive integer' };
+  }
+  return { valid: true, id: parsedId };
+};
+
+const validateDate = (dateStr) => {
+  if (!dateStr) return { valid: true, date: new Date() };
+  
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    return { valid: false, error: 'Invalid date format' };
+  }
+  return { valid: true, date };
+};
+
+const validateAttendanceData = (data) => {
+  const errors = [];
+  const validStatuses = ['present', 'absent', 'late'];
+  const validSessionTypes = ['group', 'private', 'semi-private'];
+  
+  if (!data.fighterId || isNaN(parseInt(data.fighterId)) || parseInt(data.fighterId) <= 0) {
+    errors.push('Valid fighter ID is required');
+  }
+  
+  if (data.status && !validStatuses.includes(data.status)) {
+    errors.push(`Status must be one of: ${validStatuses.join(', ')}`);
+  }
+  
+  if (data.sessionType && !validSessionTypes.includes(data.sessionType)) {
+    errors.push(`Session type must be one of: ${validSessionTypes.join(', ')}`);
+  }
+  
+  if (!data.createdBy || typeof data.createdBy !== 'string' || data.createdBy.trim().length === 0) {
+    errors.push('Created by is required');
+  }
+  
+  return errors;
+};
+
 // Helper function to get start and end of day
 function getDayBoundaries(date) {
   const targetDate = date ? new Date(date) : new Date();
@@ -16,10 +59,18 @@ function getDayBoundaries(date) {
 
 // GET attendance for a specific date
 router.get('/', async (req, res) => {
-  const prisma = req.prisma;
-  const { date } = req.query;
-  
   try {
+    const prisma = req.prisma;
+    const { date } = req.query;
+    
+    // Validate date if provided
+    if (date) {
+      const validation = validateDate(date);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+    }
+
     const { startOfDay, endOfDay } = getDayBoundaries(date);
 
     const attendance = await prisma.attendance.findMany({
@@ -40,16 +91,25 @@ router.get('/', async (req, res) => {
 
     res.json(attendance);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching attendance:', error);
+    res.status(500).json({ error: 'Failed to fetch attendance' });
   }
 });
 
 // GET daily attendance overview (coaches with sessions today)
 router.get('/daily-overview', async (req, res) => {
-  const prisma = req.prisma;
-  const { date } = req.query;
-  
   try {
+    const prisma = req.prisma;
+    const { date } = req.query;
+    
+    // Validate date if provided
+    if (date) {
+      const validation = validateDate(date);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+    }
+    
     const targetDate = date ? new Date(date) : new Date();
     const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
     
@@ -87,7 +147,8 @@ router.get('/daily-overview', async (req, res) => {
 
     res.json(coachesWithSessions);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching daily overview:', error);
+    res.status(500).json({ error: 'Failed to fetch daily overview' });
   }
 });
 
@@ -115,10 +176,22 @@ async function checkExistingAttendance(tx, fighterId, startOfDay, endOfDay) {
 
 // POST bulk attendance with transaction for atomicity
 router.post('/bulk', async (req, res) => {
-  const prisma = req.prisma;
-  const { attendanceRecords, date, adminOverride = false } = req.body;
-  
   try {
+    const prisma = req.prisma;
+    const { attendanceRecords, date, adminOverride = false } = req.body;
+    
+    // Validate inputs
+    if (!Array.isArray(attendanceRecords) || attendanceRecords.length === 0) {
+      return res.status(400).json({ error: 'Attendance records must be a non-empty array' });
+    }
+    
+    if (date) {
+      const dateValidation = validateDate(date);
+      if (!dateValidation.valid) {
+        return res.status(400).json({ error: dateValidation.error });
+      }
+    }
+    
     const attendanceDate = date ? new Date(date) : new Date();
     const { startOfDay, endOfDay } = getDayBoundaries(attendanceDate);
     
@@ -127,6 +200,17 @@ router.post('/bulk', async (req, res) => {
     // Process each record individually to handle errors gracefully
     for (const record of attendanceRecords) {
       try {
+        // Validate each record
+        const validationErrors = validateAttendanceData(record);
+        if (validationErrors.length > 0) {
+          results.push({
+            fighterId: record.fighterId,
+            errors: validationErrors,
+            success: false
+          });
+          continue;
+        }
+        
         // Validate status
         try {
           validateAttendanceStatus(record.status);
@@ -275,18 +359,38 @@ router.post('/bulk', async (req, res) => {
 
     res.json(results);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error processing bulk attendance:', error);
+    res.status(500).json({ error: 'Failed to process bulk attendance' });
   }
 });
 
 // POST single attendance record with transaction
 router.post('/', async (req, res) => {
-  const prisma = req.prisma;
-  const { fighterId, coachId, status, sessionType, notes, date, createdBy, adminOverride = false } = req.body;
-  
   try {
+    const prisma = req.prisma;
+    const { fighterId, coachId, status, sessionType, notes, date, createdBy, adminOverride = false } = req.body;
+    
+    // Validate inputs
+    const validationErrors = validateAttendanceData({ 
+      fighterId, 
+      status, 
+      sessionType, 
+      createdBy 
+    });
+    
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ errors: validationErrors });
+    }
+    
     // Validate status
     validateAttendanceStatus(status || 'present');
+    
+    if (date) {
+      const dateValidation = validateDate(date);
+      if (!dateValidation.valid) {
+        return res.status(400).json({ error: dateValidation.error });
+      }
+    }
     
     const attendanceDate = date ? new Date(date) : new Date();
     const { startOfDay, endOfDay } = getDayBoundaries(attendanceDate);
@@ -356,22 +460,27 @@ router.post('/', async (req, res) => {
       };
     });
 
-    res.json(result);
+    res.status(201).json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error creating attendance:', error);
+    res.status(500).json({ error: 'Failed to create attendance record' });
   }
 });
 
 // DELETE attendance record with transaction
 router.delete('/:id', async (req, res) => {
-  const prisma = req.prisma;
-  const attendanceId = parseInt(req.params.id);
-  
   try {
+    const prisma = req.prisma;
+    
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
     // Handle deletion and session restoration within a transaction
     const result = await prisma.$transaction(async (tx) => {
       const attendance = await tx.attendance.findUnique({
-        where: { id: attendanceId },
+        where: { id: validation.id },
         include: { fighter: true }
       });
 
@@ -406,7 +515,7 @@ router.delete('/:id', async (req, res) => {
       }
 
       await tx.attendance.delete({
-        where: { id: attendanceId }
+        where: { id: validation.id }
       });
 
       return { 
@@ -417,26 +526,44 @@ router.delete('/:id', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error deleting attendance:', error);
+    res.status(500).json({ error: 'Failed to delete attendance record' });
   }
-
-
-
 });
 
 router.get('/:id', async (req, res) => {
-  const prisma = req.prisma;
-  const fighterId = parseInt(req.params.id);
-  const { startDate, endDate } = req.query;
-  
   try {
+    const prisma = req.prisma;
+    
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    const { startDate, endDate } = req.query;
+    
+    // Validate dates if provided
+    if (startDate) {
+      const dateValidation = validateDate(startDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({ error: 'Invalid start date' });
+      }
+    }
+    
+    if (endDate) {
+      const dateValidation = validateDate(endDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({ error: 'Invalid end date' });
+      }
+    }
+    
     // Validate fighter exists
     const fighter = await prisma.fighter.findUnique({
-      where: { id: fighterId }
+      where: { id: validation.id }
     });
     
     if (!fighter) {
-      return res.status(404).json({ error: `Fighter with ID ${fighterId} not found` });
+      return res.status(404).json({ error: `Fighter with ID ${validation.id} not found` });
     }
     
     // Set up date range filter
@@ -457,7 +584,7 @@ router.get('/:id', async (req, res) => {
     // Query with or without date filter
     const attendanceRecords = await prisma.attendance.findMany({
       where: {
-        fighterId,
+        fighterId: validation.id,
         ...(startDate || endDate ? { date: dateFilter } : {})
       },
       include: {
@@ -491,7 +618,8 @@ router.get('/:id', async (req, res) => {
       summary
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching fighter attendance:', error);
+    res.status(500).json({ error: 'Failed to fetch attendance records' });
   }
 });
 

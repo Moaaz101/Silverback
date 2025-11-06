@@ -101,7 +101,7 @@ router.post('/change-password', authenticateToken, async (req, res) => {
       });
     }
 
-    // Validate new password length
+    // Validate new password length (minimum 6 characters)
     if (newPassword.length < 6) {
       return res.status(400).json({ 
         error: 'New password must be at least 6 characters long' 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthHeaders } from '../utils/utils';
+import { buildApiUrl } from '../config/api';
 
 export function usePayments(fighterId = null) {
   const [payments, setPayments] = useState([]);
@@ -13,8 +14,8 @@ export function usePayments(fighterId = null) {
       setLoading(true);
       setError(null);
       const url = fighterId 
-        ? `http://localhost:4000/payments?fighterId=${fighterId}`
-        : 'http://localhost:4000/payments';
+        ? buildApiUrl(`/payments?fighterId=${fighterId}`)
+        : buildApiUrl('/payments');
       
       const response = await fetch(url, {
         headers: getAuthHeaders(),
@@ -41,7 +42,7 @@ export function usePayments(fighterId = null) {
   // Function to create a new payment
   const createPayment = useCallback(async (paymentData) => {
     try {
-      const response = await fetch('http://localhost:4000/payments', {
+      const response = await fetch(buildApiUrl('/payments'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ export function usePayments(fighterId = null) {
   // Function to get a specific payment receipt
   const getPaymentReceipt = useCallback(async (paymentId) => {
     try {
-      const response = await fetch(`http://localhost:4000/payments/${paymentId}/receipt`, {
+      const response = await fetch(buildApiUrl(`/payments/${paymentId}/receipt`), {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
