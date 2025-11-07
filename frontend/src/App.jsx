@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ToastContainer from './components/ToastContainer';
 import Header from './components/Header';
 import BottomNavigation from './components/bottom-nav';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import Login from './pages/Login';
@@ -24,6 +25,7 @@ export default function App() {
     <AuthProvider>
       <ToastProvider>
         <Router>
+          <ScrollToTop />
           <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <Routes>
               {/* Public Route - Login */}
