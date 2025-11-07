@@ -48,7 +48,6 @@ export default function CoachesPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Coaches</h1>
-            <p className="text-gray-500">Manage your gym coaches and schedules</p>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
