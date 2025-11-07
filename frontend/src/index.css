@@ -13,6 +13,8 @@
 /* Ensure body and html don't show scrollbar */
 html,
 body {
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
