@@ -107,8 +107,9 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         paymentData = {
           paymentType: formData.paymentType,
           fighterData: {
-            ...formData.fighterData,
-            coachId: formData.fighterData.coachId || null,
+            name: formData.fighterData.name,
+            phone: formData.fighterData.phone?.trim() || null,
+            coachId: formData.fighterData.coachId ? parseInt(formData.fighterData.coachId) : null,
             totalSessionCount: parseInt(formData.sessionsAdded),
             subscriptionDurationMonths: parseInt(formData.fighterData.subscriptionDurationMonths),
             subscriptionStartDate: new Date(formData.fighterData.subscriptionStartDate).toISOString(),
@@ -254,7 +255,16 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
   );
   
   // Step 2A: New Fighter Information
-  const renderNewFighterStep = () => (
+  const renderNewFighterStep = () => {
+    // Validate required fields before allowing to continue
+    const canContinue = () => {
+      return (
+        formData.fighterData.name.trim() !== '' &&
+        formData.fighterData.subscriptionStartDate !== ''
+      );
+    };
+
+    return (
     <>
       <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
         <button 
@@ -276,7 +286,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         {/* Fighter Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Fighter Name
+            Fighter Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -327,7 +337,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         {/* Subscription Start Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Subscription Start Date
+            Subscription Start Date <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -342,7 +352,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         {/* Subscription Duration */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Subscription Duration
+            Subscription Duration <span className="text-red-500">*</span>
           </label>
           <select
             name="subscriptionDurationMonths"
@@ -372,14 +382,16 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         <button
           type="button"
           onClick={() => setStep(3)}
-          className="px-6 py-3 bg-[#492e51] text-white rounded-lg hover:bg-[#5a3660] transition-colors font-medium flex items-center"
+          disabled={!canContinue()}
+          className="px-6 py-3 bg-[#492e51] text-white rounded-lg hover:bg-[#5a3660] transition-colors font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>Continue</span>
           <ChevronRight className="w-4 h-4 ml-2" />
         </button>
       </div>
     </>
-  );
+    );
+  };
   
   // Step 2B: Select Existing Fighter
   const renderExistingFighterStep = () => (

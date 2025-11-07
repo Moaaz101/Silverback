@@ -35,9 +35,7 @@ const validatePaymentData = (data) => {
       if (!data.fighterData.name || typeof data.fighterData.name !== 'string') {
         errors.push('Fighter name is required');
       }
-      if (!data.fighterData.phone || typeof data.fighterData.phone !== 'string') {
-        errors.push('Fighter phone is required');
-      }
+      // Phone is optional - no validation needed
     }
   } else if (data.paymentType === 'renewal' || data.paymentType === 'top_up') {
     if (!data.fighterId || isNaN(parseInt(data.fighterId)) || parseInt(data.fighterId) <= 0) {

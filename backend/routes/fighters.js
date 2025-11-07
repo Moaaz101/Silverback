@@ -10,8 +10,11 @@ const validateFighterData = (data) => {
     errors.push('Name is required and must be a non-empty string');
   }
   
-  if (!data.phone || typeof data.phone !== 'string' || data.phone.trim().length === 0) {
-    errors.push('Phone is required and must be a non-empty string');
+  // Phone is optional - only validate if provided
+  if (data.phone !== null && data.phone !== undefined && data.phone !== '') {
+    if (typeof data.phone !== 'string' || data.phone.trim().length === 0) {
+      errors.push('Phone must be a non-empty string if provided');
+    }
   }
   
   if (data.coachId !== null && data.coachId !== undefined) {

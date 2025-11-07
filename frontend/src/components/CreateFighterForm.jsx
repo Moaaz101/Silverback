@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { User, UserCheck, Calendar, Target } from "lucide-react"
 import { useCoaches } from "../hooks/useCoaches"
 
@@ -44,13 +44,23 @@ export default function CreateFighterForm({ onSubmit, onCancel }) {
     }))
   }
 
+  // Check if form is valid
+  const isFormValid = () => {
+    return (
+      formData.name.trim() !== '' &&
+      formData.subscriptionStartDate !== '' &&
+      formData.totalSessionCount > 0 &&
+      formData.subscriptionDurationMonths > 0
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Fighter Name */}
       <div>
         <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
           <User className="w-4 h-4" />
-          <span>Fighter Name</span>
+          <span>Fighter Name <span className="text-red-500">*</span></span>
         </label>
         <input
           type="text"
@@ -96,7 +106,7 @@ export default function CreateFighterForm({ onSubmit, onCancel }) {
       <div>
         <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
           <Target className="w-4 h-4" />
-          <span>Total Sessions</span>
+          <span>Total Sessions <span className="text-red-500">*</span></span>
         </label>
         <input
           type="number"
@@ -115,7 +125,7 @@ export default function CreateFighterForm({ onSubmit, onCancel }) {
       <div>
         <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
           <Calendar className="w-4 h-4" />
-          <span>Subscription Start Date</span>
+          <span>Subscription Start Date <span className="text-red-500">*</span></span>
         </label>
         <input
           type="date"
@@ -131,7 +141,7 @@ export default function CreateFighterForm({ onSubmit, onCancel }) {
       <div>
         <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
           <Calendar className="w-4 h-4" />
-          <span>Subscription Duration</span>
+          <span>Subscription Duration <span className="text-red-500">*</span></span>
         </label>
         <select
           name="subscriptionDurationMonths"
@@ -160,7 +170,7 @@ export default function CreateFighterForm({ onSubmit, onCancel }) {
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isFormValid()}
           className="flex-1 px-4 py-3 bg-[#492e51] text-white rounded-lg hover:bg-[#5a3660] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Creating..." : "Create Fighter"}
