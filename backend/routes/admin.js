@@ -108,7 +108,7 @@ router.get('/export-data', async (req, res) => {
         include: { 
           coach: true,
           payments: true,
-          attendance: true,
+          attendances: true,
         } 
       }),
       prisma.coach.findMany({
