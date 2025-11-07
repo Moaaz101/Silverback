@@ -9,7 +9,6 @@
     "build": "npx prisma generate && npx prisma migrate deploy",
     "test": "echo \"Error: no test specified\" && exit 1",
     "backup": "node scripts/backup.js create",
-    "init-admin": "node scripts/init-admin.js",
     "backup:list": "node scripts/backup.js list",
     "backup:restore": "node scripts/backup.js restore"
   },

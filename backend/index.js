@@ -11,6 +11,9 @@ import coachRoutes from './routes/coaches.js';
 import attendanceRoutes from './routes/attendance.js';
 import paymentRoutes from './routes/payments.js';
 import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
+// TEMPORARY: Setup route - DELETE AFTER CREATING ADMIN
+import setupRoutes from './routes/setup.js';
 
 // Import middleware
 import { authenticateToken } from './middleware/auth.js';
@@ -104,11 +107,15 @@ app.get('/', (req, res) => {
 // Public routes (no authentication required)
 app.use('/auth', authLimiter, authRoutes);
 
+// TEMPORARY: Admin setup endpoint - DELETE AFTER USE!
+app.use('/setup', setupRoutes);
+
 // Protected routes (authentication required)
 app.use('/fighters', authenticateToken, fighterRoutes);
 app.use('/coaches', authenticateToken, coachRoutes);
 app.use('/attendance', authenticateToken, attendanceRoutes);
 app.use('/payments', authenticateToken, paymentRoutes);
+app.use('/admin', authenticateToken, adminRoutes);
 
 // 404 handler
 app.use((req, res) => {
