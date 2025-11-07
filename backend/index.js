@@ -42,6 +42,9 @@ prisma.$connect()
     process.exit(1);
   });
 
+// Trust Railway's proxy (fixes rate limit X-Forwarded-For warning)
+app.set('trust proxy', true);
+prisma.$connect()
 // Security Middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Disable for API
