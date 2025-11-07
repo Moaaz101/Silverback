@@ -24,10 +24,9 @@ export default function Header() {
       className="bg-[#391843] border-b border-[#3d2544] shadow-lg sticky top-0 z-50"
       style={{
         /* Extend header to fill notch area */
-        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
-        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
-        paddingLeft: 'max(1.5rem, env(safe-area-inset-left, 0px))',
-        paddingRight: 'max(1.5rem, env(safe-area-inset-right, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
       }}
     >
       <div className="max-w-6xl mx-auto px-6 py-4">

@@ -42,13 +42,7 @@ export default function App() {
 
                       {/* Main Content */}
                       <main 
-                        className="flex-1"
-                        style={{
-                          /* Add padding for bottom nav + safe area */
-                          paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
-                          paddingLeft: 'env(safe-area-inset-left, 0px)',
-                          paddingRight: 'env(safe-area-inset-right, 0px)',
-                        }}
+                        className="flex-1 pb-20 md:pb-6"
                       >
                         <Routes>
                           {/* Redirect root to fighters */}
