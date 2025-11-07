@@ -7,6 +7,8 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "build": "npx prisma generate && npx prisma migrate deploy",
+    "pre-migrate": "node scripts/pre-migrate.js",
+    "migrate": "node scripts/pre-migrate.js && npx prisma migrate deploy",
     "test": "echo \"Error: no test specified\" && exit 1",
     "backup": "node scripts/backup.js create",
     "backup:list": "node scripts/backup.js list",

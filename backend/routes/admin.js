@@ -8,22 +8,56 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
+ * Get the actual database file path
+ * Handles both local development and Railway volume storage
+ */
+function getDatabasePath() {
+  // Check if DATABASE_URL is set (from environment)
+  const dbUrl = process.env.DATABASE_URL;
+  
+  if (dbUrl && dbUrl.startsWith('file:')) {
+    // Extract path from DATABASE_URL (e.g., "file:/data/silverback.db" -> "/data/silverback.db")
+    const dbPath = dbUrl.replace('file:', '');
+    
+    // If the path exists, use it (production/Railway)
+    if (fs.existsSync(dbPath)) {
+      return dbPath;
+    }
+    
+    // If path doesn't exist but starts with /data, we're in Railway with volume
+    if (dbPath.startsWith('/data')) {
+      return dbPath;
+    }
+  }
+  
+  // Fallback to local development path
+  return path.join(__dirname, '../prisma/dev.db');
+}
+
+/**
  * Get database statistics
  * GET /admin/db-stats
  */
 router.get('/db-stats', async (req, res) => {
   try {
     const prisma = req.prisma;
-    const dbPath = path.join(__dirname, '../prisma/dev.db');
+    const dbPath = getDatabasePath();
     
     // Get file stats if database file exists
     let dbStats = null;
     if (fs.existsSync(dbPath)) {
       const stats = fs.statSync(dbPath);
       dbStats = {
+        path: dbPath,
         size: stats.size,
         sizeFormatted: `${(stats.size / 1024).toFixed(2)} KB`,
         lastModified: stats.mtime,
+      };
+    } else {
+      dbStats = {
+        path: dbPath,
+        exists: false,
+        message: 'Database file not found (might be initializing)',
       };
     }
     
@@ -134,13 +168,14 @@ router.get('/export-data', async (req, res) => {
  */
 router.get('/download-db', async (req, res) => {
   try {
-    const dbPath = path.join(__dirname, '../prisma/dev.db');
+    const dbPath = getDatabasePath();
     
     // Check if database file exists
     if (!fs.existsSync(dbPath)) {
       return res.status(404).json({ 
         error: 'Database file not found',
-        path: dbPath 
+        path: dbPath,
+        message: 'Database might be initializing or path is incorrect'
       });
     }
 
