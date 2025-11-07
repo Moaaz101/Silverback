@@ -25,7 +25,16 @@ const navigationItems = [
 
 export default function BottomNavigation() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#391843] border-t border-[#3d2544] shadow-inner z-50">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 bg-[#391843] border-t border-[#3d2544] shadow-inner z-50"
+      style={{
+        /* Extend nav to fill home indicator area */
+        marginBottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
+        paddingLeft: 'max(0.5rem, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+      }}
+    >
       <div className="flex items-center justify-around px-2 py-2">
         {navigationItems.map((item) => (
           <NavLink
