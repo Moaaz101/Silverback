@@ -429,9 +429,10 @@ FRONTEND_URL="http://localhost:5173"
 5. `backend/routes/payments.js` - Input validation + error handling
 6. `backend/routes/attendance.js` - Input validation + error handling
 7. `backend/routes/auth.js` - Basic password length validation (6+ characters)
-8. `backend/scripts/backup.js` - Automated database backup script
-9. `backend/scripts/backup.bat` - Windows scheduled backup script
-10. `backend/package.json` - Added backup npm scripts
+8. `backend/routes/admin.js` - Database stats, export, and download endpoints
+9. `backend/scripts/start.sh` - Production startup script with migrations
+10. `backend/package.json` - Updated scripts for production deployment
+11. `PRODUCTION_BACKUP_GUIDE.md` - Production backup and monitoring guide
 
 ---
 
@@ -442,11 +443,12 @@ FRONTEND_URL="http://localhost:5173"
 ✅ **Input Validation** - Never trust user input  
 ✅ **Error Handling** - Proper exception management  
 ✅ **Secure Configuration** - Strong secrets and proper settings  
-✅ **Rate Limiting** - Protection against abuse  
+✅ **Rate Limiting** - Auth-only rate limiting (removed general limiting for UX)  
 ✅ **CORS Restriction** - Only allow trusted origins  
 ✅ **Security Headers** - Helmet protection  
 ✅ **Authentication** - JWT with strong secrets  
 ✅ **Authorization** - Token verification on protected routes  
+✅ **Production Backups** - API-based backup endpoints for Railway deployment  
 
 ---
 
