@@ -6,23 +6,24 @@ import ErrorDisplay from "../components/ErrorDisplay";
 import EmptyState from "../components/EmptyState";
 import Modal from "../components/Modal";
 import CreateCoachForm from "../components/CreateCoachForm";
+import EditCoachForm from "../components/EditCoachForm";
 import { useCoaches } from "../hooks/useCoaches";
 import { useToast } from "../contexts/ToastContext";
 import { UserCheck, Plus } from "lucide-react";
 
 export default function CoachesPage() {
   const { toast } = useToast();
-  const { coaches, loading, error, createCoach } = useCoaches();
+  const { coaches, loading, error, createCoach, updateCoach, deleteCoach } = useCoaches();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedCoach, setSelectedCoach] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateCoach = async (coachData) => {
     try {
       setIsSubmitting(true);
-      
       await createCoach(coachData);
-      
-      // Close modal on success
       setIsCreateModalOpen(false);
       toast.success("Coach created successfully!");
     } catch (error) {
@@ -31,6 +32,46 @@ export default function CoachesPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditCoach = async (coachData) => {
+    try {
+      setIsSubmitting(true);
+      await updateCoach(selectedCoach.id, coachData);
+      setIsEditModalOpen(false);
+      setSelectedCoach(null);
+      toast.success("Coach updated successfully!");
+    } catch (error) {
+      console.error("Error updating coach:", error);
+      toast.error("Failed to update coach: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCoach = async () => {
+    try {
+      setIsSubmitting(true);
+      await deleteCoach(selectedCoach.id);
+      setIsDeleteModalOpen(false);
+      setSelectedCoach(null);
+      toast.success("Coach deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting coach:", error);
+      toast.error("Failed to delete coach: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditModal = (coach) => {
+    setSelectedCoach(coach);
+    setIsEditModalOpen(true);
+  };
+
+  const openDeleteModal = (coach) => {
+    setSelectedCoach(coach);
+    setIsDeleteModalOpen(true);
   };
 
   if (loading && coaches.length === 0) {
@@ -72,7 +113,12 @@ export default function CoachesPage() {
             style={{ gridAutoRows: "min-content" }}
           >
             {coaches.map((coach) => (
-              <CoachCard key={coach.id} coach={coach} />
+              <CoachCard 
+                key={coach.id} 
+                coach={coach} 
+                onEdit={openEditModal}
+                onDelete={openDeleteModal}
+              />
             ))}
           </div>
         )}
@@ -91,6 +137,72 @@ export default function CoachesPage() {
             onCancel={() => setIsCreateModalOpen(false)}
             isSubmitting={isSubmitting}
           />
+        </Modal>
+
+        {/* Edit Coach Modal */}
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => !isSubmitting && setIsEditModalOpen(false)}
+          title="Edit Coach"
+        >
+          {selectedCoach && (
+            <EditCoachForm
+              coach={selectedCoach}
+              onSubmit={handleEditCoach}
+              onCancel={() => {
+                setIsEditModalOpen(false);
+                setSelectedCoach(null);
+              }}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => !isSubmitting && setIsDeleteModalOpen(false)}
+          title="Delete Coach"
+        >
+          {selectedCoach && (
+            <div className="space-y-4">
+              <p className="text-gray-700">
+                Are you sure you want to delete <strong>{selectedCoach.name}</strong>?
+              </p>
+              {selectedCoach.fighters && selectedCoach.fighters.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800 text-sm">
+                    ⚠️ This coach has <strong>{selectedCoach.fighters.length}</strong> assigned fighter(s). 
+                    Deleting will remove the coach assignment from these fighters.
+                  </p>
+                </div>
+              )}
+              <p className="text-sm text-gray-600">
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setSelectedCoach(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteCoach}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Deleting..." : "Delete Coach"}
+                </button>
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
     </div>

@@ -1,9 +1,28 @@
 import { useState } from "react"
-import { UserCheck, Calendar, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
-import { formatTime } from "../utils/utils.js"
+import { UserCheck, Calendar, Clock, ChevronDown, ChevronUp, Users, Edit, Trash2 } from "lucide-react"
 
-export default function CoachCard({ coach }) {
+export default function CoachCard({ coach, onEdit, onDelete }) {
   const [isExpanded, setIsExpanded] = useState(false)
+
+const formatTime = (time24h) => {
+  // If time is already in 12-hour format or invalid, return as is
+  if (!time24h || !time24h.includes(':')) return time24h;
+  
+  try {
+    // Parse hours and minutes from 24h format (e.g., "14:30")
+    const [hours24, minutes] = time24h.split(':');
+    const hours24Num = parseInt(hours24, 10);
+    
+    // Convert to 12-hour format
+    const period = hours24Num >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24Num % 12 || 12; // Convert 0 to 12 for 12 AM
+    
+    return `${hours12}:${minutes} ${period}`;
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return time24h; // Return original format if parsing fails
+  }
+};
 
   const getScheduleCount = (schedules) => {
     return schedules ? schedules.length : 0
@@ -82,6 +101,30 @@ export default function CoachCard({ coach }) {
                 <p className="text-white/60 text-sm">No schedule set</p>
               )}
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(coach);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 rounded-lg transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+              <span className="text-sm font-medium">Edit</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(coach);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-sm font-medium">Delete</span>
+            </button>
           </div>
         </div>
       </div>

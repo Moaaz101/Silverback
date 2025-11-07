@@ -139,4 +139,110 @@ router.post('/:id/schedule', async (req, res) => {
   }
 });
 
+// PUT update a coach
+router.put('/:id', async (req, res) => {
+  try {
+    const prisma = req.prisma;
+    const { name, weeklySchedule } = req.body;
+    
+    // Validate coach ID
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    // Verify coach exists
+    const existingCoach = await prisma.coach.findUnique({
+      where: { id: validation.id }
+    });
+    if (!existingCoach) {
+      return res.status(404).json({ error: 'Coach not found' });
+    }
+    
+    // Validate coach data
+    const coachValidationErrors = validateCoachData({ name });
+    if (coachValidationErrors.length > 0) {
+      return res.status(400).json({ errors: coachValidationErrors });
+    }
+    
+    // Validate schedule data if provided
+    if (weeklySchedule) {
+      const scheduleValidationErrors = validateScheduleData(weeklySchedule);
+      if (scheduleValidationErrors.length > 0) {
+        return res.status(400).json({ errors: scheduleValidationErrors });
+      }
+    }
+
+    // Update coach and replace schedules
+    const coach = await prisma.coach.update({
+      where: { id: validation.id },
+      data: {
+        name,
+        schedules: weeklySchedule ? {
+          deleteMany: {}, // Delete all existing schedules
+          create: weeklySchedule.map(entry => ({
+            weekday: entry.dayOfWeek,
+            time: entry.time
+          }))
+        } : undefined
+      },
+      include: { 
+        schedules: true,
+        fighters: true 
+      }
+    });
+
+    res.json(coach);
+  } catch (error) {
+    console.error('Error updating coach:', error);
+    res.status(500).json({ error: 'Failed to update coach' });
+  }
+});
+
+// DELETE a coach
+router.delete('/:id', async (req, res) => {
+  try {
+    const prisma = req.prisma;
+    
+    // Validate coach ID
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    // Verify coach exists
+    const coach = await prisma.coach.findUnique({
+      where: { id: validation.id },
+      include: { 
+        fighters: true,
+        schedules: true,
+        attendances: true
+      }
+    });
+    
+    if (!coach) {
+      return res.status(404).json({ error: 'Coach not found' });
+    }
+    
+    // Note: Deleting a coach will:
+    // 1. Set coachId to NULL for all assigned fighters (thanks to optional relationship)
+    // 2. Delete all coach schedules (cascade delete)
+    // 3. Keep attendance records (they have coachName stored for history)
+    
+    // Delete the coach (cascades will handle schedules)
+    await prisma.coach.delete({
+      where: { id: validation.id }
+    });
+    
+    res.json({ 
+      message: 'Coach deleted successfully',
+      affectedFighters: coach.fighters.length,
+      deletedSchedules: coach.schedules.length
+    });
+  } catch (error) {
+    console.error('Error deleting coach:', error);
+    res.status(500).json({ error: 'Failed to delete coach' });
+  }
+});
+
 export default router;
