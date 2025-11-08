@@ -159,6 +159,108 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 });
 
 /**
+ * POST /auth/change-username
+ * Change admin username (requires authentication and password confirmation)
+ */
+router.post('/change-username', authenticateToken, async (req, res) => {
+  const prisma = req.prisma;
+  
+  try {
+    const { newUsername, password } = req.body;
+
+    // Validate input
+    if (!newUsername || !password) {
+      return res.status(400).json({ 
+        error: 'New username and password are required' 
+      });
+    }
+
+    // Validate username (alphanumeric, underscore, hyphen, 3-20 chars)
+    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+    if (!usernameRegex.test(newUsername)) {
+      return res.status(400).json({ 
+        error: 'Username must be 3-20 characters (letters, numbers, underscore, hyphen only)' 
+      });
+    }
+
+    // Get admin from database
+    const admin = await prisma.admin.findUnique({
+      where: { id: req.admin.id },
+    });
+
+    if (!admin) {
+      return res.status(404).json({ 
+        error: 'Admin account not found' 
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        error: 'Password is incorrect' 
+      });
+    }
+
+    // Check if new username is already taken
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { username: newUsername.trim() },
+    });
+
+    if (existingAdmin && existingAdmin.id !== admin.id) {
+      return res.status(409).json({ 
+        error: 'Username is already taken' 
+      });
+    }
+
+    // Check if new username is same as current
+    if (newUsername.trim() === admin.username) {
+      return res.status(400).json({ 
+        error: 'New username must be different from current username' 
+      });
+    }
+
+    // Update username in database
+    const updatedAdmin = await prisma.admin.update({
+      where: { id: admin.id },
+      data: { 
+        username: newUsername.trim(),
+        updatedAt: new Date(),
+      },
+    });
+
+    console.log(`✅ Username changed successfully from ${admin.username} to ${updatedAdmin.username}`);
+
+    // Generate new JWT token with updated username
+    const newToken = jwt.sign(
+      { 
+        id: updatedAdmin.id,
+        username: updatedAdmin.username,
+        role: 'admin' 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Username changed successfully',
+      token: newToken,
+      user: {
+        id: updatedAdmin.id,
+        username: updatedAdmin.username,
+      }
+    });
+  } catch (error) {
+    console.error('Change username error:', error);
+    res.status(500).json({ 
+      error: 'Failed to change username. Please try again.' 
+    });
+  }
+});
+
+/**
  * POST /auth/logout
  * Logout endpoint (token removal handled client-side)
  */

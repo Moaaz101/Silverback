@@ -11,6 +11,7 @@ import ScrollToTop from './components/ScrollToTop';
 // Pages
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
+import ChangeUsername from './pages/ChangeUsername';
 import Fighters from './pages/Fighters';
 import FighterProfile from './pages/FighterProfile';
 import Coaches from './pages/Coaches';
@@ -65,6 +66,7 @@ export default function App() {
 
                           {/* Settings Routes */}
                           <Route path="/change-password" element={<ChangePassword />} />
+                          <Route path="/change-username" element={<ChangeUsername />} />
 
                           {/* 404 - Redirect to fighters */}
                           <Route path="*" element={<Navigate to="/fighters" replace />} />

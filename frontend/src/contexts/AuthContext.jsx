@@ -153,6 +153,45 @@ export function AuthProvider({ children }) {
   };
 
   /**
+   * Change username function
+   */
+  const changeUsername = async (newUsername, password) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const response = await fetch(buildApiUrl('/auth/change-username'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newUsername, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Username change failed');
+      }
+
+      // Update local storage with new token and user info
+      localStorage.setItem('authToken', data.token);
+      setUser(data.user);
+
+      return { 
+        success: true, 
+        message: data.message,
+        user: data.user 
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.message || 'Failed to change username. Please try again.' 
+      };
+    }
+  };
+
+  /**
    * Get current auth token
    */
   const getToken = () => {
@@ -166,6 +205,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     changePassword,
+    changeUsername,
     getToken,
   };
 

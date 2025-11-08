@@ -19,6 +19,11 @@ export default function Header() {
     navigate('/change-password');
   };
 
+  const handleChangeUsername = () => {
+    setShowDropdown(false);
+    navigate('/change-username');
+  };
+
   return (
     <header 
       className="bg-[#391843] border-b border-[#3d2544] shadow-lg sticky top-0 z-50"
@@ -79,6 +84,14 @@ export default function Header() {
                   >
                     <Lock className="w-5 h-5" />
                     <span>Change Password</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleChangeUsername}
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <User className="w-5 h-5" />
+                    <span>Change Username</span>
                   </button>
                   
                   <button
