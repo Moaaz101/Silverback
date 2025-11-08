@@ -88,6 +88,7 @@ router.post('/', async (req, res) => {
     // Use transaction to ensure both fighter and payment are created/updated
     const result = await prisma.$transaction(async (tx) => {
       let targetFighterId = fighterId;
+      let targetFighterName = '';
       
       // If this is a new signup, create the fighter first
       if (paymentType === 'new_signup' && fighterData) {
@@ -102,6 +103,7 @@ router.post('/', async (req, res) => {
           }
         });
         targetFighterId = newFighter.id;
+        targetFighterName = newFighter.name;
       }
       // For renewal or top-up, update existing fighter
       else if ((paymentType === 'renewal' || paymentType === 'top_up') && targetFighterId) {
@@ -112,6 +114,8 @@ router.post('/', async (req, res) => {
         if (!fighter) {
           throw new Error(`Fighter with ID ${targetFighterId} not found`);
         }
+        
+        targetFighterName = fighter.name;
         
         // For renewal, reset subscription start date and update sessions
         if (paymentType === 'renewal') {
@@ -144,6 +148,7 @@ router.post('/', async (req, res) => {
       const payment = await tx.payment.create({
         data: {
           fighterId: parseInt(targetFighterId),
+          fighterName: targetFighterName,
           amount: parseFloat(amount),
           method,
           paymentType,

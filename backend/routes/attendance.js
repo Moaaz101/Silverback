@@ -301,6 +301,7 @@ router.post('/bulk', async (req, res) => {
             attendanceRecord = await tx.attendance.create({
               data: {
                 fighterId: record.fighterId,
+                fighterName: fighter.name,
                 coachId: fighter.coachId || 0,
                 coachName: fighter.coach?.name || 'Unassigned',
                 date: attendanceDate,
@@ -420,6 +421,7 @@ router.post('/', async (req, res) => {
       const attendance = await tx.attendance.create({
         data: {
           fighterId,
+          fighterName: fighter.name,
           coachId: coachId || fighter.coachId || 0,
           coachName: fighter.coach?.name || 'Unassigned',
           date: attendanceDate,

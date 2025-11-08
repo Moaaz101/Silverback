@@ -155,6 +155,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: 'Fighter not found' });
     }
     
+    // Delete fighter - payments and attendance will have fighterId set to NULL
     await req.prisma.fighter.delete({ where: { id: validation.id } });
     res.json({ message: "Fighter deleted" });
   } catch (error) {

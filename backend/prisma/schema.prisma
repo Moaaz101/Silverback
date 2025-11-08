@@ -17,7 +17,7 @@ model Coach {
 
 model CoachSchedule {
   id        Int     @id @default(autoincrement())
-  coach     Coach   @relation(fields: [coachId], references: [id])
+  coach     Coach   @relation(fields: [coachId], references: [id], onDelete: Cascade)
   coachId   Int
   weekday   String  // e.g., "Monday"
   time      String  // e.g., "18:00"
@@ -41,24 +41,26 @@ model Fighter {
 }
 
 model Attendance {
-  id         Int      @id @default(autoincrement())
-  date       DateTime @default(now())
-  fighter    Fighter  @relation(fields: [fighterId], references: [id])
-  fighterId  Int
-  coach      Coach    @relation(fields: [coachId], references: [id])
-  coachId    Int
-  coachName  String   // For history record (in case coach changes later)
-  sessionType String  // "group" or "private"
-  status     String   @default("present") // "present", "absent", "late"
-  notes      String?
-  createdAt  DateTime @default(now())
-  createdBy  String?  // Admin who marked attendance
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  fighter     Fighter? @relation(fields: [fighterId], references: [id], onDelete: SetNull)
+  fighterId   Int?
+  fighterName String   // For history record (in case fighter is deleted)
+  coach       Coach?   @relation(fields: [coachId], references: [id], onDelete: SetNull)
+  coachId     Int?
+  coachName   String   // For history record (in case coach changes later)
+  sessionType String   // "group" or "private"
+  status      String   @default("present") // "present", "absent", "late"
+  notes       String?
+  createdAt   DateTime @default(now())
+  createdBy   String?  // Admin who marked attendance
 }
 
 model Payment {
   id              Int      @id @default(autoincrement())
-  fighter         Fighter  @relation(fields: [fighterId], references: [id])
-  fighterId       Int
+  fighter         Fighter? @relation(fields: [fighterId], references: [id], onDelete: SetNull)
+  fighterId       Int?
+  fighterName     String   // For history record (in case fighter is deleted)
   amount          Float
   date            DateTime @default(now())
   method          String   // "cash" or "bank_transfer"
