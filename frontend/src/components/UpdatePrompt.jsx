@@ -1,48 +1,40 @@
 import { useEffect, useState } from 'react';
 import { ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 export default function UpdatePrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
-  const [registration, setRegistration] = useState(null);
+
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      // Check for updates every hour
+      r && setInterval(() => {
+        console.log('Checking for updates...');
+        r.update();
+      }, 60 * 60 * 1000);
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error);
+    },
+  });
 
   useEffect(() => {
-    // Check for service worker updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((reg) => {
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available
-              setShowPrompt(true);
-              setRegistration(reg);
-            }
-          });
-        });
-      });
-
-      // Check for updates periodically (every 60 minutes)
-      setInterval(() => {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.update();
-        });
-      }, 60 * 60 * 1000);
+    if (needRefresh) {
+      setShowPrompt(true);
     }
-  }, []);
+  }, [needRefresh]);
 
-  const handleUpdate = () => {
-    if (registration?.waiting) {
-      // Tell the service worker to skip waiting
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      
-      // Reload the page after service worker activates
-      window.location.reload();
-    }
+  const handleUpdate = async () => {
+    await updateServiceWorker(true);
+    // The page will reload automatically after service worker updates
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
+    setNeedRefresh(false);
     // Show again after 1 hour
     setTimeout(() => setShowPrompt(true), 60 * 60 * 1000);
   };

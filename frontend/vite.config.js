@@ -9,7 +9,7 @@ export default defineConfig({
     react(), 
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'favicon-32x32.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Silverback Gym Management',
@@ -36,6 +36,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: false,
+        clientsClaim: true,
         // Cache strategy
         runtimeCaching: [
           {
