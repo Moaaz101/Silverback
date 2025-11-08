@@ -5,26 +5,57 @@ import { Link } from "react-router-dom"
 export default function FighterCard({ fighter }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const getStatusInfo = (sessionsLeft) => {
-    if (sessionsLeft > 5) {
-      return {
-        className: "bg-green-500/20 text-green-300",
-        text: "Active"
-      }
-    } else if (sessionsLeft > 0) {
-      return {
-        className: "bg-yellow-500/20 text-yellow-300",
-        text: "Low Sessions"
-      }
-    } else {
-      return {
-        className: "bg-red-500/20 text-red-300",
-        text: "Expired"
+  const getStatusInfo = (fighter) => {
+    const status = fighter.subscriptionStatus;
+    
+    // If we don't have subscription status yet, fall back to sessions only
+    if (!status) {
+      if (fighter.sessionsLeft > 5) {
+        return { className: "bg-green-500/20 text-green-300", text: "Active" };
+      } else if (fighter.sessionsLeft > 0) {
+        return { className: "bg-yellow-500/20 text-yellow-300", text: "Low Sessions" };
+      } else {
+        return { className: "bg-red-500/20 text-red-300", text: "Expired" };
       }
     }
+    
+    // Check dual expiration system
+    if (status.isExpired) {
+      return {
+        className: "bg-red-500/20 text-red-300",
+        text: status.expirationReason === 'sessions' ? "Expired - No Sessions" : "Expired - Time",
+        icon: "🔴"
+      };
+    } else if (status.isExpiringSoon) {
+      return {
+        className: "bg-orange-500/20 text-orange-300",
+        text: `Expiring Soon`,
+        icon: "🟠"
+      };
+    } else if (fighter.sessionsLeft <= 5 && fighter.sessionsLeft > 0) {
+      return {
+        className: "bg-yellow-500/20 text-yellow-300",
+        text: "Low Sessions",
+        icon: "🟡"
+      };
+    } else {
+      return {
+        className: "bg-green-500/20 text-green-300",
+        text: "Active",
+        icon: "🟢"
+      };
+    }
   }
+  
+  const formatExpirationDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
-  const status = getStatusInfo(fighter.sessionsLeft)
+  const status = getStatusInfo(fighter)
 
   return (
     <div 
@@ -127,6 +158,36 @@ export default function FighterCard({ fighter }) {
               </p>
             </div>
           </div>
+          
+          {/* Expiration Date & Status */}
+          {fighter.subscriptionStatus && (
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-white/80" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white/60 text-xs font-medium uppercase tracking-wide">Expiration</p>
+                <p className="text-white font-medium">
+                  {formatExpirationDate(fighter.subscriptionStatus.expirationDate)}
+                </p>
+                {fighter.subscriptionStatus.isExpired ? (
+                  <p className="text-red-300 text-xs mt-1">
+                    {fighter.subscriptionStatus.expirationReason === 'sessions' 
+                      ? '❌ No sessions remaining' 
+                      : `❌ Expired - ${fighter.sessionsLeft} unused sessions`}
+                  </p>
+                ) : fighter.subscriptionStatus.isExpiringSoon ? (
+                  <p className="text-orange-300 text-xs mt-1">
+                    ⏰ {fighter.subscriptionStatus.daysRemaining} days remaining
+                  </p>
+                ) : (
+                  <p className="text-green-300 text-xs mt-1">
+                    ✅ {fighter.subscriptionStatus.daysRemaining} days remaining
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* View Profile Button */}
           <Link 

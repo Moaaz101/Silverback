@@ -42,10 +42,9 @@ export function useAttendance() {
    * Submit bulk attendance records
    * @param {Array} attendanceRecords - Array of attendance records to submit
    * @param {string} date - Date in YYYY-MM-DD format
-   * @param {boolean} adminOverride - Whether to allow admin override for fighters with no sessions
    * @returns {Promise<Object>} Object with success/error results
    */
-  const submitBulkAttendance = useCallback(async (attendanceRecords, date, adminOverride = false) => {
+  const submitBulkAttendance = useCallback(async (attendanceRecords, date) => {
     try {
       setLoading(true);
       setError(null);
@@ -56,7 +55,6 @@ export function useAttendance() {
         body: JSON.stringify({
           attendanceRecords,
           date,
-          adminOverride,
         }),
       });
 

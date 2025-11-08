@@ -2,6 +2,35 @@ import { Router } from "express";
 
 const router = Router();
 
+// Helper function to calculate subscription expiration details
+const getSubscriptionStatus = (fighter) => {
+  const now = new Date();
+  const startDate = new Date(fighter.subscriptionStartDate);
+  const expirationDate = new Date(startDate);
+  expirationDate.setMonth(expirationDate.getMonth() + fighter.subscriptionDurationMonths);
+  
+  const isExpiredByTime = now > expirationDate;
+  const isExpiredBySessions = fighter.sessionsLeft <= 0;
+  const isExpired = isExpiredByTime || isExpiredBySessions;
+  
+  // Calculate days remaining
+  const timeDiff = expirationDate - now;
+  const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  
+  // Determine if expiring soon (within 7 days)
+  const isExpiringSoon = daysRemaining > 0 && daysRemaining <= 7 && !isExpiredBySessions;
+  
+  return {
+    isExpired,
+    isExpiredByTime,
+    isExpiredBySessions,
+    isExpiringSoon,
+    expirationDate: expirationDate.toISOString(),
+    daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
+    expirationReason: isExpiredBySessions ? 'sessions' : (isExpiredByTime ? 'time' : null)
+  };
+};
+
 // Validation helper functions
 const validateFighterData = (data) => {
   const errors = [];
@@ -40,7 +69,14 @@ router.get("/", async (req, res) => {
     const fighters = await req.prisma.fighter.findMany({
       include: { coach: true },
     });
-    res.json(fighters);
+    
+    // Add subscription status to each fighter
+    const fightersWithStatus = fighters.map(fighter => ({
+      ...fighter,
+      subscriptionStatus: getSubscriptionStatus(fighter)
+    }));
+    
+    res.json(fightersWithStatus);
   } catch (error) {
     console.error('Error fetching fighters:', error);
     res.status(500).json({ error: 'Failed to fetch fighters' });
@@ -64,7 +100,13 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: 'Fighter not found' });
     }
     
-    res.json(fighter);
+    // Add subscription status
+    const fighterWithStatus = {
+      ...fighter,
+      subscriptionStatus: getSubscriptionStatus(fighter)
+    };
+    
+    res.json(fighterWithStatus);
   } catch (error) {
     console.error('Error fetching fighter:', error);
     res.status(500).json({ error: 'Failed to fetch fighter' });

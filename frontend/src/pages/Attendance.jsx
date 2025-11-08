@@ -6,7 +6,6 @@ import {
   Users, 
   UserCheck, 
   CalendarDays, 
-  AlertTriangle, 
   CheckCircle, 
   XCircle, 
   Clock as ClockIcon 
@@ -25,8 +24,6 @@ export default function AttendancePage() {
   const [coachesWithSessions, setCoachesWithSessions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [attendanceData, setAttendanceData] = useState({});
-  const [showAdminOverride, setShowAdminOverride] = useState(false);
-  const [adminOverride, setAdminOverride] = useState(false);
 
   /**
    * Load daily overview data
@@ -60,6 +57,7 @@ export default function AttendancePage() {
    */
   useEffect(() => {
     loadDailyOverview(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   /**
@@ -113,23 +111,14 @@ export default function AttendancePage() {
         return;
       }
 
-      const result = await submitBulkAttendance(attendanceRecords, selectedDate, adminOverride);
+      const result = await submitBulkAttendance(attendanceRecords, selectedDate);
       
       // Handle results
-      if (result.hasNoSessionsError && !adminOverride) {
-        setShowAdminOverride(true);
-        toast.warning(
-          'Some fighters have no sessions left. Enable "Admin Override" to proceed anyway.',
-          { duration: 8000 }
-        );
-        return;
-      }
-
       if (result.errors.length > 0) {
         const errorMessages = result.errors
-          .map(error => `${error.fighterId}: ${error.error}`)
-          .join(', ');
-        toast.error(`Errors occurred: ${errorMessages}`, { duration: 8000 });
+          .map(error => error.error)
+          .join('. ');
+        toast.error(errorMessages, { duration: 8000 });
       }
 
       if (result.successes.length > 0) {
@@ -138,8 +127,6 @@ export default function AttendancePage() {
 
       // Refresh the data
       await loadDailyOverview(selectedDate);
-      setShowAdminOverride(false);
-      setAdminOverride(false);
       
     } catch (error) {
       console.error('Error submitting attendance:', error);
@@ -180,26 +167,10 @@ export default function AttendancePage() {
                 />
               </div>
               
-              {/* Admin Override Checkbox */}
-              {showAdminOverride && (
-                <div className="flex items-center space-x-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-                  <input
-                    type="checkbox"
-                    id="adminOverride"
-                    checked={adminOverride}
-                    onChange={(e) => setAdminOverride(e.target.checked)}
-                    className="rounded border-yellow-300 text-yellow-600 focus:ring-yellow-500"
-                  />
-                  <label htmlFor="adminOverride" className="text-sm text-yellow-800 font-medium">
-                    Admin Override
-                  </label>
-                </div>
-              )}
-              
               <button
                 onClick={handleSubmitAttendance}
                 disabled={submitting || loading}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-6 py-3 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-medium shadow-lg hover:shadow-xl border border-[#5a3660]/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-8 py-3.5 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-semibold shadow-xl hover:shadow-2xl border-2 border-white/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 active:scale-100 ring-2 ring-[#492e51]/30 ring-offset-2"
               >
                 {submitting ? (
                   <>
@@ -216,22 +187,6 @@ export default function AttendancePage() {
             </div>
           </div>
         </div>
-
-        {/* Admin Override Info */}
-        {showAdminOverride && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-yellow-800">Admin Override Required</h3>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Some fighters have no sessions remaining. Enable "Admin Override" to mark attendance anyway. 
-                  This will allow tracking attendance even when subscription packages are exhausted.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Coaches with Sessions */}
         {coachesWithSessions.length === 0 ? (
@@ -296,9 +251,6 @@ export default function AttendancePage() {
                               <h4 className="font-semibold text-gray-900 truncate">{fighter.name}</h4>
                               <div className="flex items-center space-x-2 text-sm text-gray-500">
                                 <span>Sessions: {fighter.sessionsLeft}</span>
-                                {fighter.sessionsLeft === 0 && (
-                                  <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                                )}
                               </div>
                             </div>
                             <span 

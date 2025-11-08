@@ -1,6 +1,27 @@
 import { Router } from 'express';
 const router = Router();
 
+// Helper function to check subscription status
+const checkSubscriptionStatus = (fighter) => {
+  const now = new Date();
+  const startDate = new Date(fighter.subscriptionStartDate);
+  const expirationDate = new Date(startDate);
+  expirationDate.setMonth(expirationDate.getMonth() + fighter.subscriptionDurationMonths);
+  
+  const isExpiredByTime = now > expirationDate;
+  const isExpiredBySessions = fighter.sessionsLeft <= 0;
+  const isExpired = isExpiredByTime || isExpiredBySessions;
+  
+  return {
+    isExpired,
+    isExpiredByTime,
+    isExpiredBySessions,
+    expirationDate,
+    sessionsLeft: fighter.sessionsLeft,
+    reason: isExpiredBySessions ? 'sessions' : (isExpiredByTime ? 'time' : null)
+  };
+};
+
 // Validation helper functions
 const validateId = (id) => {
   const parsedId = parseInt(id);
@@ -178,7 +199,7 @@ async function checkExistingAttendance(tx, fighterId, startOfDay, endOfDay) {
 router.post('/bulk', async (req, res) => {
   try {
     const prisma = req.prisma;
-    const { attendanceRecords, date, adminOverride = false } = req.body;
+    const { attendanceRecords, date } = req.body;
     
     // Validate inputs
     if (!Array.isArray(attendanceRecords) || attendanceRecords.length === 0) {
@@ -246,6 +267,27 @@ router.post('/bulk', async (req, res) => {
           let sessionAdjustment = null;
           const shouldDeductOld = existingAttendance && (existingAttendance.status === 'present' || existingAttendance.status === 'late');
           const shouldDeductNew = record.status === 'present' || record.status === 'late';
+          
+          // Check subscription status ONLY when:
+          // 1. Creating NEW attendance with present/late status, OR
+          // 2. Updating existing attendance from absent to present/late (new deduction)
+          const needsSubscriptionCheck = shouldDeductNew && (!existingAttendance || !shouldDeductOld);
+          
+          if (needsSubscriptionCheck) {
+            const subscriptionStatus = checkSubscriptionStatus(fighter);
+            
+            if (subscriptionStatus.isExpired) {
+              const errorMessage = subscriptionStatus.isExpiredBySessions
+                ? `${fighter.name} has no sessions remaining`
+                : `${fighter.name}'s subscription expired on ${subscriptionStatus.expirationDate.toLocaleDateString()}`;
+              
+              return {
+                fighterId: record.fighterId,
+                error: errorMessage,
+                success: false
+              };
+            }
+          }
 
           if (existingAttendance) {
             // Handle session adjustments directly within transaction
@@ -256,12 +298,14 @@ router.post('/bulk', async (req, res) => {
               updatedSessionsLeft += 1;
             } else if (!shouldDeductOld && shouldDeductNew) {
               // Was absent, now present/late → deduct session
-              if (fighter.sessionsLeft > 0 || adminOverride) {
+              // (Subscription check already done above)
+              
+              if (fighter.sessionsLeft > 0) {
                 updatedSessionsLeft -= 1;
-              } else if (!adminOverride) {
+              } else {
                 return {
                   fighterId: record.fighterId,
-                  error: `Fighter ${fighter.name} has no sessions left (current: ${fighter.sessionsLeft}). Use admin override to proceed.`,
+                  error: `Fighter ${fighter.name} has no sessions left (current: ${fighter.sessionsLeft}). Cannot mark attendance.`,
                   success: false
                 };
               }
@@ -314,7 +358,7 @@ router.post('/bulk', async (req, res) => {
 
             // Handle session deduction for new attendance within transaction
             if (shouldDeductNew) {
-              if (fighter.sessionsLeft > 0 || adminOverride) {
+              if (fighter.sessionsLeft > 0) {
                 const updatedSessionsLeft = fighter.sessionsLeft - 1;
                 await tx.fighter.update({
                   where: { id: record.fighterId },
@@ -331,10 +375,10 @@ router.post('/bulk', async (req, res) => {
                   sessionAdjustment: -1,
                   newSessionsLeft: updatedFighter.sessionsLeft
                 };
-              } else if (!adminOverride) {
+              } else {
                 return {
                   fighterId: record.fighterId,
-                  error: `Fighter ${fighter.name} has no sessions left (current: ${fighter.sessionsLeft}). Use admin override to proceed.`,
+                  error: `Fighter ${fighter.name} has no sessions left (current: ${fighter.sessionsLeft}). Cannot mark attendance.`,
                   success: false
                 };
               }
@@ -369,7 +413,7 @@ router.post('/bulk', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const prisma = req.prisma;
-    const { fighterId, coachId, status, sessionType, notes, date, createdBy, adminOverride = false } = req.body;
+    const { fighterId, coachId, status, sessionType, notes, date, createdBy } = req.body;
     
     // Validate inputs
     const validationErrors = validateAttendanceData({ 
@@ -407,6 +451,17 @@ router.post('/', async (req, res) => {
         throw new Error('Fighter not found');
       }
       
+      // Check subscription status
+      const subscriptionStatus = checkSubscriptionStatus(fighter);
+      
+      if (subscriptionStatus.isExpired) {
+        const errorMessage = subscriptionStatus.isExpiredBySessions
+          ? `Cannot mark attendance: Fighter has no sessions remaining (0/${fighter.totalSessionCount})`
+          : `Cannot mark attendance: Subscription expired on ${subscriptionStatus.expirationDate.toLocaleDateString()}. ${subscriptionStatus.sessionsLeft} unused sessions.`;
+        
+        throw new Error(errorMessage);
+      }
+      
       // Check for existing attendance on this date
       const existingAttendance = await checkExistingAttendance(tx, fighterId, startOfDay, endOfDay);
       
@@ -434,7 +489,7 @@ router.post('/', async (req, res) => {
 
       // Handle session deduction if needed
       if (shouldDeductNew) {
-        if (fighter.sessionsLeft > 0 || adminOverride) {
+        if (fighter.sessionsLeft > 0) {
           const updatedSessionsLeft = fighter.sessionsLeft - 1;
           await tx.fighter.update({
             where: { id: fighterId },
@@ -451,8 +506,8 @@ router.post('/', async (req, res) => {
             sessionAdjustment: -1,
             newSessionsLeft: updatedFighter.sessionsLeft
           };
-        } else if (!adminOverride) {
-          throw new Error(`Fighter ${fighter.name} has no sessions left (current: ${fighter.sessionsLeft}). Use admin override to proceed.`);
+        } else {
+          throw new Error(`Fighter ${fighter.name} has no sessions left (current: ${fighter.sessionsLeft}). Cannot mark attendance.`);
         }
       }
 
