@@ -9,6 +9,22 @@
   --sal: env(safe-area-inset-left);
 }
 
+/* Animation for update prompt */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
 /* Hide scrollbar - must come after Tailwind import */
 * {
   scrollbar-width: none; /* Firefox */

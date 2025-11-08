@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ToastContainer from './components/ToastContainer';
+import UpdatePrompt from './components/UpdatePrompt';
 import Header from './components/Header';
 import BottomNavigation from './components/bottom-nav';
 import ScrollToTop from './components/ScrollToTop';
@@ -77,6 +78,9 @@ export default function App() {
                 }
               />
             </Routes>
+
+            {/* Update Prompt for PWA */}
+            <UpdatePrompt />
 
             {/* Global Toast Notifications */}
             <ToastContainer />
