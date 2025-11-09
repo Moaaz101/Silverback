@@ -16,6 +16,8 @@ import Fighters from './pages/Fighters';
 import FighterProfile from './pages/FighterProfile';
 import Coaches from './pages/Coaches';
 import Attendance from './pages/Attendance';
+import PrivateSessions from './pages/PrivateSessions';
+import PrivateSessionHistory from './pages/PrivateSessionHistory';
 import Payments from './pages/Payments';
 import PaymentReceiptPage from './pages/PaymentReceiptPage';
 /**
@@ -59,6 +61,10 @@ export default function App() {
 
                           {/* Attendance Routes */}
                           <Route path="/attendance" element={<Attendance />} />
+                          
+                          {/* Private Sessions Routes */}
+                          <Route path="/private-sessions" element={<PrivateSessions />} />
+                          <Route path="/private-sessions/history" element={<PrivateSessionHistory />} />
 
                           {/* Payment Routes */}
                           <Route path="/payments" element={<Payments />} />

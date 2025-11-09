@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Users,
+  Target
 } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useToast } from "../contexts/ToastContext";
@@ -46,7 +48,8 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
       coachId: '',
       totalSessionCount: 10,
       subscriptionStartDate: new Date().toISOString().split('T')[0],
-      subscriptionDurationMonths: 1
+      subscriptionDurationMonths: 1,
+      subscriptionType: 'group'
     }
   });
   
@@ -113,6 +116,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
             totalSessionCount: parseInt(formData.sessionsAdded),
             subscriptionDurationMonths: parseInt(formData.fighterData.subscriptionDurationMonths),
             subscriptionStartDate: new Date(formData.fighterData.subscriptionStartDate).toISOString(),
+            subscriptionType: formData.fighterData.subscriptionType,
             sessionsLeft: parseInt(formData.sessionsAdded)
           },
           amount: parseFloat(formData.amount),
@@ -130,6 +134,8 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
           sessionsAdded: parseInt(formData.sessionsAdded),
           subscriptionDurationMonths: formData.paymentType === 'renewal' ? 
             parseInt(formData.fighterData.subscriptionDurationMonths) : undefined,
+          subscriptionType: formData.paymentType === 'renewal' ? 
+            formData.fighterData.subscriptionType : undefined,
           notes: formData.notes,
           createdBy: currentAdmin
         };
@@ -370,6 +376,58 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
         </div>
       </div>
       
+      {/* Package Type Selection */}
+      <div className="mt-6">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Package Type <span className="text-red-500">*</span>
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <label className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+            formData.fighterData.subscriptionType === 'group' 
+              ? 'border-[#492e51] bg-[#492e51]/10' 
+              : 'border-gray-300 hover:border-gray-400'
+          }`}>
+            <input
+              type="radio"
+              name="subscriptionType"
+              value="group"
+              checked={formData.fighterData.subscriptionType === 'group'}
+              onChange={handleFighterDataChange}
+              className="sr-only"
+            />
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="w-8 h-8 text-[#492e51]" />
+              </div>
+              <div className="font-semibold">Group Classes</div>
+              <div className="text-xs text-gray-500 mt-1">Regular scheduled sessions</div>
+            </div>
+          </label>
+          
+          <label className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+            formData.fighterData.subscriptionType === 'private' 
+              ? 'border-[#492e51] bg-[#492e51]/10' 
+              : 'border-gray-300 hover:border-gray-400'
+          }`}>
+            <input
+              type="radio"
+              name="subscriptionType"
+              value="private"
+              checked={formData.fighterData.subscriptionType === 'private'}
+              onChange={handleFighterDataChange}
+              className="sr-only"
+            />
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Target className="w-8 h-8 text-[#492e51]" />
+              </div>
+              <div className="font-semibold">Private Sessions</div>
+              <div className="text-xs text-gray-500 mt-1">1-on-1 with coach</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      
       <div className="mt-8 flex justify-between">
         <button
           type="button"
@@ -502,6 +560,82 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Details</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Subscription Duration (only for renewals) */}
+        {formData.paymentType === 'renewal' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Subscription Duration <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="subscriptionDurationMonths"
+              value={formData.fighterData.subscriptionDurationMonths}
+              onChange={handleFighterDataChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#492e51] focus:border-transparent outline-none transition-all"
+            >
+              <option value={1}>1 Month</option>
+              <option value={2}>2 Months</option>
+              <option value={3}>3 Months</option>
+              <option value={6}>6 Months</option>
+              <option value={12}>12 Months</option>
+            </select>
+          </div>
+        )}
+
+        {/* Package Type Selection (only for renewals) */}
+        {formData.paymentType === 'renewal' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Package Type <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                formData.fighterData.subscriptionType === 'group' 
+                  ? 'border-[#492e51] bg-[#492e51]/10' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}>
+                <input
+                  type="radio"
+                  name="subscriptionType"
+                  value="group"
+                  checked={formData.fighterData.subscriptionType === 'group'}
+                  onChange={handleFighterDataChange}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Users className="w-8 h-8 text-[#492e51]" />
+                  </div>
+                  <div className="font-semibold">Group Classes</div>
+                  <div className="text-xs text-gray-500 mt-1">Regular scheduled sessions</div>
+                </div>
+              </label>
+              
+              <label className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                formData.fighterData.subscriptionType === 'private' 
+                  ? 'border-[#492e51] bg-[#492e51]/10' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}>
+                <input
+                  type="radio"
+                  name="subscriptionType"
+                  value="private"
+                  checked={formData.fighterData.subscriptionType === 'private'}
+                  onChange={handleFighterDataChange}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Target className="w-8 h-8 text-[#492e51]" />
+                  </div>
+                  <div className="font-semibold">Private Sessions</div>
+                  <div className="text-xs text-gray-500 mt-1">1-on-1 with coach</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* Session Count */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -31,6 +31,7 @@ model Fighter {
   coachId                Int?     // Made optional so fighters can exist without a coach
   subscriptionStartDate  DateTime
   subscriptionDurationMonths Int  // e.g., 1, 2, 3...
+  subscriptionType       String   @default("group")  // "group" or "private"
   totalSessionCount      Int      // 8, 10, or 12
   sessionsLeft           Int
   notes                  String?

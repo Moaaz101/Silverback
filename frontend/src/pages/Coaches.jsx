@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import CoachCard from "../components/CoachCard";
 import CoachSummaryBox from "../components/CoachSummaryBox";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -12,6 +13,7 @@ import { useToast } from "../contexts/ToastContext";
 import { UserCheck, Plus } from "lucide-react";
 
 export default function CoachesPage() {
+  const location = useLocation();
   const { toast } = useToast();
   const { coaches, loading, error, createCoach, updateCoach, deleteCoach } = useCoaches();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -19,6 +21,16 @@ export default function CoachesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCoach, setSelectedCoach] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset state when refresh is triggered from navbar
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setIsCreateModalOpen(false);
+      setIsEditModalOpen(false);
+      setIsDeleteModalOpen(false);
+      setSelectedCoach(null);
+    }
+  }, [location.state?.refresh]);
 
   const handleCreateCoach = async (coachData) => {
     try {
@@ -74,16 +86,14 @@ export default function CoachesPage() {
     setIsDeleteModalOpen(true);
   };
 
-  if (loading && coaches.length === 0) {
-    return <LoadingSpinner message="Loading coaches..." />;
-  }
-
-  if (error) {
-    return <ErrorDisplay error={error} title="Error loading coaches" />;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div key={location.state?.refresh}>
+      {loading && coaches.length === 0 ? (
+        <LoadingSpinner message="Loading coaches..." />
+      ) : error ? (
+        <ErrorDisplay error={error} title="Error loading coaches" />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -172,7 +182,7 @@ export default function CoachesPage() {
               {selectedCoach.fighters && selectedCoach.fighters.length > 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-yellow-800 text-sm">
-                    ⚠️ This coach has <strong>{selectedCoach.fighters.length}</strong> assigned fighter(s). 
+                    <strong>Warning:</strong> This coach has <strong>{selectedCoach.fighters.length}</strong> assigned fighter(s). 
                     Deleting will remove the coach assignment from these fighters.
                   </p>
                 </div>
@@ -205,6 +215,8 @@ export default function CoachesPage() {
           )}
         </Modal>
       </div>
+        </div>
+      )}
     </div>
   );
 }

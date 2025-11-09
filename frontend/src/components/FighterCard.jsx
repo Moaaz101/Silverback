@@ -23,26 +23,22 @@ export default function FighterCard({ fighter }) {
     if (status.isExpired) {
       return {
         className: "bg-red-500/20 text-red-300",
-        text: status.expirationReason === 'sessions' ? "Expired - No Sessions" : "Expired - Time",
-        icon: "🔴"
+        text: "Expired"
       };
     } else if (status.isExpiringSoon) {
       return {
         className: "bg-orange-500/20 text-orange-300",
-        text: `Expiring Soon`,
-        icon: "🟠"
+        text: `Expiring Soon`
       };
     } else if (fighter.sessionsLeft <= 5 && fighter.sessionsLeft > 0) {
       return {
         className: "bg-yellow-500/20 text-yellow-300",
-        text: "Low Sessions",
-        icon: "🟡"
+        text: "Low Sessions"
       };
     } else {
       return {
         className: "bg-green-500/20 text-green-300",
-        text: "Active",
-        icon: "🟢"
+        text: "Active"
       };
     }
   }
@@ -56,6 +52,11 @@ export default function FighterCard({ fighter }) {
   };
 
   const status = getStatusInfo(fighter)
+  
+  // Get package type badge
+  const packageBadge = fighter.subscriptionType === 'private' 
+    ? { text: 'Private', className: 'bg-purple-500/30 text-purple-200' }
+    : { text: 'Class', className: 'bg-blue-500/30 text-blue-200' };
 
   return (
     <div 
@@ -72,9 +73,14 @@ export default function FighterCard({ fighter }) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white leading-tight">{fighter.name}</h2>
-              <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium mt-1 ${status.className}`}>
-                {status.text}
-              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>
+                  {status.text}
+                </span>
+                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${packageBadge.className}`}>
+                  {packageBadge.text}
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -114,7 +120,7 @@ export default function FighterCard({ fighter }) {
               <Target className="w-4 h-4 text-white/80" />
             </div>
             <div className="flex-1">
-              <p className="text-white/60 text-xs font-medium uppercase tracking-wide mb-1">Sessions Used</p>
+              <p className="text-white/60 text-xs font-medium uppercase tracking-wide mb-1">Sessions</p>
               <div className="flex items-center space-x-2">
                 <div className="flex-1 bg-white/20 rounded-full h-2">
                   <div
@@ -173,16 +179,16 @@ export default function FighterCard({ fighter }) {
                 {fighter.subscriptionStatus.isExpired ? (
                   <p className="text-red-300 text-xs mt-1">
                     {fighter.subscriptionStatus.expirationReason === 'sessions' 
-                      ? '❌ No sessions remaining' 
-                      : `❌ Expired - ${fighter.sessionsLeft} unused sessions`}
+                      ? 'No sessions remaining' 
+                      : `Expired past due - ${fighter.sessionsLeft} unused sessions`}
                   </p>
                 ) : fighter.subscriptionStatus.isExpiringSoon ? (
                   <p className="text-orange-300 text-xs mt-1">
-                    ⏰ {fighter.subscriptionStatus.daysRemaining} days remaining
+                    {fighter.subscriptionStatus.daysRemaining} days remaining
                   </p>
                 ) : (
                   <p className="text-green-300 text-xs mt-1">
-                    ✅ {fighter.subscriptionStatus.daysRemaining} days remaining
+                    {fighter.subscriptionStatus.daysRemaining} days remaining
                   </p>
                 )}
               </div>

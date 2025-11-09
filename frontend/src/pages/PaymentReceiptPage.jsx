@@ -18,6 +18,7 @@ export default function PaymentReceiptPage() {
 
   useEffect(() => {
     fetchReceipt();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchReceipt = async () => {
@@ -319,6 +320,12 @@ export default function PaymentReceiptPage() {
                     <p className="font-medium">{receipt.fighter.name}</p>
                   </div>
                   <div>
+                    <p className="text-gray-500 text-sm mb-1">Subscription Type</p>
+                    <p className="font-medium capitalize">
+                      {receipt.fighter.subscriptionType}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-gray-500 text-sm mb-1">Payment Method</p>
                     <p className="font-medium capitalize">
                       {receipt.paymentMethod}
@@ -344,14 +351,14 @@ export default function PaymentReceiptPage() {
                     </p>
                   </div>
                   <span className="font-medium">
-                    ${receipt.amount.toFixed(2)}
+                    {receipt.amount.toFixed(2)} EGP
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center py-4 mt-4">
                   <span className="font-semibold">Total</span>
                   <span className="font-bold text-xl">
-                    ${receipt.amount.toFixed(2)}
+                    {receipt.amount.toFixed(2)} EGP
                   </span>
                 </div>
               </div>

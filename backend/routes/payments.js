@@ -126,7 +126,9 @@ router.post('/', async (req, res) => {
               // For renewal, we're adding sessionsAdded to their total
               totalSessionCount: parseInt(sessionsAdded),
               sessionsLeft: parseInt(sessionsAdded),
-              subscriptionDurationMonths: parseInt(req.body.subscriptionDurationMonths || fighter.subscriptionDurationMonths)
+              subscriptionDurationMonths: parseInt(req.body.subscriptionDurationMonths || fighter.subscriptionDurationMonths),
+              // Allow changing subscription type during renewal
+              ...(req.body.subscriptionType && { subscriptionType: req.body.subscriptionType })
             }
           });
         }
@@ -282,7 +284,8 @@ router.get('/:id/receipt', async (req, res) => {
       date: payment.date,
       fighter: {
         name: payment.fighter.name,
-        id: payment.fighter.id
+        id: payment.fighter.id,
+        subscriptionType: payment.fighter.subscriptionType
       },
       amount: payment.amount,
       paymentMethod: payment.method,

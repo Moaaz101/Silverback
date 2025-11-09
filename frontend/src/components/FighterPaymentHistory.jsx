@@ -63,7 +63,7 @@ export default function FighterPaymentHistory({ fighterId }) {
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Total Payments</h3>
-              <p className="text-2xl font-bold">${summary.total.toFixed(2)}</p>
+              <p className="text-2xl font-bold">{summary.total.toFixed(2)} EGP</p>
             </div>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function FighterPaymentHistory({ fighterId }) {
                       +{payment.sessionsAdded}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${payment.amount.toFixed(2)}
+                      {payment.amount.toFixed(2)} EGP
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <a 

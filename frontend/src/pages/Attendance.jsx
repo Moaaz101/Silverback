@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { 
   Calendar, 
   Clock, 
@@ -17,6 +18,7 @@ import { useAttendance } from "../hooks/useAttendance";
 import { formatTime } from "../utils/utils.js";
 
 export default function AttendancePage() {
+  const location = useLocation();
   const { toast } = useToast();
   const { loading, error, fetchDailyOverview, submitBulkAttendance } = useAttendance();
   
@@ -24,6 +26,14 @@ export default function AttendancePage() {
   const [coachesWithSessions, setCoachesWithSessions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [attendanceData, setAttendanceData] = useState({});
+
+  // Reset state when refresh is triggered from navbar
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setSelectedDate(new Date().toISOString().split('T')[0]);
+      setAttendanceData({});
+    }
+  }, [location.state?.refresh]);
 
   /**
    * Load daily overview data
@@ -136,16 +146,14 @@ export default function AttendancePage() {
     }
   };
 
-  if (loading && coachesWithSessions.length === 0) {
-    return <LoadingSpinner message="Loading daily attendance..." />;
-  }
-
-  if (error) {
-    return <ErrorDisplay error={error} title="Error loading attendance" />;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div key={location.state?.refresh}>
+      {loading && coachesWithSessions.length === 0 ? (
+        <LoadingSpinner message="Loading daily attendance..." />
+      ) : error ? (
+        <ErrorDisplay error={error} title="Error loading attendance" />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -317,6 +325,8 @@ export default function AttendancePage() {
           </div>
         )}
       </div>
+    </div>
+      )}
     </div>
   );
 }

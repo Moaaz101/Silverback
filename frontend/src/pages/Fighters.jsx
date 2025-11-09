@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 import FighterCard from "../components/FighterCard"
 import SummaryBox from "../components/SummaryBox"
 import LoadingSpinner from "../components/LoadingSpinner"
@@ -11,22 +12,26 @@ import { User, Plus, UserPlus  } from "lucide-react"
 import { useCoaches } from "../hooks/useCoaches"
 
 export default function FightersPage() {
+  const location = useLocation();
   const { coaches } = useCoaches()
   const [selectedCoachId, setSelectedCoachId] = useState("")
-  const { fighters, loading, error } = useFighters(selectedCoachId || null); 
+  const { fighters, loading, error } = useFighters(selectedCoachId || null);
 
-
-
-  if (loading) {
-    return <LoadingSpinner message="Loading fighters..." />
-  }
-
-  if (error) {
-    return <ErrorDisplay error={error} title="Error loading fighters" />
-  }
+  // Reset filters when refresh is triggered from navbar
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setSelectedCoachId("");
+    }
+  }, [location.state?.refresh]); 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div key={location.state?.refresh}>
+      {loading ? (
+        <LoadingSpinner message="Loading fighters..." />
+      ) : error ? (
+        <ErrorDisplay error={error} title="Error loading fighters" />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -80,6 +85,8 @@ export default function FightersPage() {
         {/* Stats Summary */}
         <SummaryBox fighters={fighters} />
       </div>
+        </div>
+      )}
     </div>
   )
 }

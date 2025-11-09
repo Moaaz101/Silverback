@@ -66,7 +66,7 @@ export default function CoachEarnings() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Total Earnings (Selected Period)</h3>
-                  <p className="text-3xl font-bold text-gray-800">${totalEarningsAllCoaches.toFixed(2)}</p>
+                  <p className="text-3xl font-bold text-gray-800">{totalEarningsAllCoaches.toFixed(2)} EGP</p>
                 </div>
               </div>
             </div>
@@ -79,7 +79,7 @@ export default function CoachEarnings() {
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500 flex items-center gap-2"><DollarSign size={16} /> Total Earnings</span>
-                        <span className="font-medium text-gray-900">${coach.totalEarnings.toFixed(2)}</span>
+                        <span className="font-medium text-gray-900">{coach.totalEarnings.toFixed(2)} EGP</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500 flex items-center gap-2"><Users size={16} /> Payments</span>

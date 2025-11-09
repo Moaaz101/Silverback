@@ -152,6 +152,9 @@ router.get('/daily-overview', async (req, res) => {
           }
         },
         fighters: {
+          where: {
+            subscriptionType: 'group'  // Only show group fighters in attendance
+          },
           include: {
             attendances: {
               where: {
@@ -256,6 +259,15 @@ router.post('/bulk', async (req, res) => {
             return {
               fighterId: record.fighterId,
               error: `Fighter with ID ${record.fighterId} not found`,
+              success: false
+            };
+          }
+
+          // Block private fighters from group attendance
+          if (fighter.subscriptionType === 'private') {
+            return {
+              fighterId: record.fighterId,
+              error: `${fighter.name} has a private package. Record sessions via Private Sessions page.`,
               success: false
             };
           }
@@ -588,6 +600,86 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /private - Must come BEFORE /:id route to avoid matching "private" as an ID
+router.get('/private', async (req, res) => {
+  try {
+    const prisma = req.prisma;
+    const { fighterId, startDate, endDate, limit } = req.query;
+    
+    // Build where clause
+    const where = {
+      sessionType: 'private'
+    };
+    
+    if (fighterId) {
+      const validation = validateId(fighterId);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+      where.fighterId = validation.id;
+    }
+    
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        if (isNaN(start.getTime())) {
+          return res.status(400).json({ error: 'Invalid start date' });
+        }
+        where.date.gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (isNaN(end.getTime())) {
+          return res.status(400).json({ error: 'Invalid end date' });
+        }
+        where.date.lte = end;
+      }
+    }
+    
+    // Parse and validate limit
+    let takeLimit = undefined;
+    if (limit) {
+      const parsedLimit = parseInt(limit);
+      if (isNaN(parsedLimit) || parsedLimit <= 0) {
+        return res.status(400).json({ error: 'Invalid limit parameter' });
+      }
+      takeLimit = parsedLimit;
+    }
+    
+    const privateSessions = await prisma.attendance.findMany({
+      where,
+      include: {
+        fighter: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            sessionsLeft: true,
+            totalSessionCount: true,
+            subscriptionType: true
+          }
+        },
+        coach: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        date: 'desc'
+      },
+      take: takeLimit
+    });
+    
+    res.json(privateSessions);
+  } catch (error) {
+    console.error('Error fetching private sessions:', error);
+    res.status(500).json({ error: 'Failed to fetch private sessions' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const prisma = req.prisma;
@@ -680,6 +772,114 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// POST private session - Admin records 1-on-1 sessions
+router.post('/private', async (req, res) => {
+  try {
+    const prisma = req.prisma;
+    const { fighterId, date, status, notes, createdBy, duration } = req.body;
+    
+    // Validate inputs
+    const validationErrors = validateAttendanceData({ 
+      fighterId, 
+      status: status || 'present',
+      sessionType: 'private',
+      createdBy 
+    });
+    
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ errors: validationErrors });
+    }
+    
+    const attendanceDate = date ? new Date(date) : new Date();
+    const { startOfDay, endOfDay } = getDayBoundaries(attendanceDate);
+    
+    // Handle attendance creation and session adjustment within a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const fighter = await tx.fighter.findUnique({
+        where: { id: fighterId },
+        include: { coach: true }
+      });
 
+      if (!fighter) {
+        throw new Error('Fighter not found');
+      }
+      
+      // Verify fighter has private package
+      if (fighter.subscriptionType !== 'private') {
+        throw new Error(`${fighter.name} has a group package. Use regular attendance for group sessions.`);
+      }
+      
+      // Check subscription status
+      const subscriptionStatus = checkSubscriptionStatus(fighter);
+      
+      if (subscriptionStatus.isExpired) {
+        const errorMessage = subscriptionStatus.isExpiredBySessions
+          ? `Cannot record session: ${fighter.name} has no sessions remaining`
+          : `Cannot record session: ${fighter.name}'s subscription expired on ${subscriptionStatus.expirationDate.toLocaleDateString()}`;
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Check for existing attendance on this date
+      const existingAttendance = await checkExistingAttendance(tx, fighterId, startOfDay, endOfDay);
+      
+      if (existingAttendance) {
+        throw new Error(`A session for ${fighter.name} is already recorded on this date. Please edit or delete the existing record.`);
+      }
+
+      const shouldDeduct = status === 'present' || status === 'late';
+      let sessionAdjustment = null;
+
+      // Create attendance record
+      const attendance = await tx.attendance.create({
+        data: {
+          fighterId,
+          fighterName: fighter.name,
+          coachId: fighter.coachId || 0,
+          coachName: fighter.coach?.name || 'Unassigned',
+          date: attendanceDate,
+          status: status || 'present',
+          sessionType: 'private',
+          notes: notes || (duration ? `Private session (${duration} min)` : 'Private session'),
+          createdBy
+        }
+      });
+
+      // Handle session deduction if needed
+      if (shouldDeduct) {
+        if (fighter.sessionsLeft > 0) {
+          const updatedSessionsLeft = fighter.sessionsLeft - 1;
+          await tx.fighter.update({
+            where: { id: fighterId },
+            data: { sessionsLeft: updatedSessionsLeft }
+          });
+          
+          // Re-fetch for accuracy
+          const updatedFighter = await tx.fighter.findUnique({
+            where: { id: fighterId },
+            select: { sessionsLeft: true }
+          });
+          
+          sessionAdjustment = {
+            sessionAdjustment: -1,
+            newSessionsLeft: updatedFighter.sessionsLeft
+          };
+        } else {
+          throw new Error(`${fighter.name} has no sessions left`);
+        }
+      }
+
+      return {
+        attendance,
+        sessionAdjustment
+      };
+    });
+
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Error recording private session:', error);
+    res.status(500).json({ error: error.message || 'Failed to record private session' });
+  }
+});
 
 export default router;

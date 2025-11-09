@@ -52,6 +52,13 @@ const validateFighterData = (data) => {
     }
   }
   
+  // Validate subscriptionType if provided
+  if (data.subscriptionType !== null && data.subscriptionType !== undefined) {
+    if (!['group', 'private'].includes(data.subscriptionType)) {
+      errors.push('Subscription type must be either "group" or "private"');
+    }
+  }
+  
   return errors;
 };
 

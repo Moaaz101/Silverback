@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   CreditCard,
   Plus,
@@ -14,9 +14,17 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function Payments() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { payments, loading, error, refetch } = usePayments();
   const [showNewPaymentForm, setShowNewPaymentForm] = useState(false);
   const { user } = useAuth();
+
+  // Reset state when refresh is triggered from navbar
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setShowNewPaymentForm(false);
+    }
+  }, [location.state?.refresh]);
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -38,26 +46,22 @@ export default function Payments() {
     return types[type] || type;
   };
 
-  if (loading && !showNewPaymentForm) {
-    return <LoadingSpinner message="Loading payments..." />;
-  }
-  
-  // Show new payment form
-  if (showNewPaymentForm) {
-    return (
-      <NewPaymentForm 
-        onClose={() => setShowNewPaymentForm(false)}
-        onPaymentCreated={() => {
-          setShowNewPaymentForm(false);
-          refetch();
-        }}
-        currentAdmin={user.username}
-      />
-    );
-  }
-
+  // Wrap everything in a div with the refresh key
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div key={location.state?.refresh}>
+      {loading && !showNewPaymentForm ? (
+        <LoadingSpinner message="Loading payments..." />
+      ) : showNewPaymentForm ? (
+        <NewPaymentForm 
+          onClose={() => setShowNewPaymentForm(false)}
+          onPaymentCreated={() => {
+            setShowNewPaymentForm(false);
+            refetch();
+          }}
+          currentAdmin={user.username}
+        />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -141,7 +145,7 @@ export default function Payments() {
                         {payment.method}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${payment.amount.toFixed(2)}
+                        {payment.amount.toFixed(2)} EGP
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button 
@@ -159,6 +163,8 @@ export default function Payments() {
           )}
         </div>
       </div>
+        </div>
+      )}
     </div>
   );
 }
