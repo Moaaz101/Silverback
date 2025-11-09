@@ -386,5 +386,48 @@ router.get('/earnings/by-coach', async (req, res) => {
   }
 });
 
+// DELETE payment by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const prisma = req.prisma;
+    
+    const validation = validateId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const paymentId = validation.id;
+
+    // Check if payment exists
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { fighter: true }
+    });
+
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    // Delete the payment (receipt is part of the same record, so it's deleted too)
+    await prisma.payment.delete({
+      where: { id: paymentId }
+    });
+
+    res.json({ 
+      message: 'Payment deleted successfully',
+      deletedPayment: {
+        id: payment.id,
+        receiptNumber: payment.receiptNumber,
+        fighterName: payment.fighterName,
+        amount: payment.amount
+      }
+    });
+
+  } catch (error) {
+    console.error('Error deleting payment:', error);
+    res.status(500).json({ error: 'Failed to delete payment' });
+  }
+});
+
 
 export default router;

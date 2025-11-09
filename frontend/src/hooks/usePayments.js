@@ -80,6 +80,26 @@ export function usePayments(fighterId = null) {
     }
   }, []);
 
+  // Function to delete a payment
+  const deletePayment = useCallback(async (paymentId) => {
+    try {
+      const response = await fetch(buildApiUrl(`/payments/${paymentId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete payment');
+      }
+      const result = await response.json();
+      await fetchPayments(); // Refresh the payments list
+      return result;
+    } catch (err) {
+      console.error('Error deleting payment:', err);
+      throw err; // Let the component handle this error
+    }
+  }, [fetchPayments]);
+
   // Fetch payments on initial load
   useEffect(() => {
     fetchPayments();
@@ -93,6 +113,7 @@ export function usePayments(fighterId = null) {
     summary,
     refetch: fetchPayments,
     createPayment,
-    getPaymentReceipt
+    getPaymentReceipt,
+    deletePayment
   };
 }

@@ -4,27 +4,58 @@ import {
   CreditCard,
   Plus,
   FileText,
+  Trash2,
 } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import NewPaymentForm from "../components/NewPaymentForm";
+import Modal from "../components/Modal";
 import { usePayments } from "../hooks/usePayments";
 import CoachEarnings from "../components/CoachEarnings";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 
 
 export default function Payments() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { payments, loading, error, refetch } = usePayments();
+  const { toast } = useToast();
+  const { payments, loading, error, refetch, deletePayment } = usePayments();
   const [showNewPaymentForm, setShowNewPaymentForm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
 
   // Reset state when refresh is triggered from navbar
   useEffect(() => {
     if (location.state?.refresh) {
       setShowNewPaymentForm(false);
+      setShowDeleteModal(false);
+      setSelectedPayment(null);
     }
   }, [location.state?.refresh]);
+
+  // Handle delete payment
+  const handleDeleteClick = (payment) => {
+    setSelectedPayment(payment);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPayment) return;
+    
+    setIsDeleting(true);
+    try {
+      await deletePayment(selectedPayment.id);
+      toast.success(`Payment ${selectedPayment.receiptNumber || `#${selectedPayment.id}`} deleted successfully`);
+      setShowDeleteModal(false);
+      setSelectedPayment(null);
+    } catch (error) {
+      toast.error(`Failed to delete payment: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -148,12 +179,21 @@ export default function Payments() {
                         {payment.amount.toFixed(2)} EGP
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button 
-                          onClick={() => navigate(`/payments/${payment.id}/receipt`)}
-                          className="text-[#492e51] hover:text-[#5a3660]"
-                        >
-                          View Receipt
-                        </button>
+                        <div className="flex items-center justify-end space-x-3">
+                          <button 
+                            onClick={() => navigate(`/payments/${payment.id}/receipt`)}
+                            className="text-[#492e51] hover:text-[#5a3660] font-medium"
+                          >
+                            View Receipt
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteClick(payment)}
+                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Delete payment"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -162,6 +202,72 @@ export default function Payments() {
             </div>
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setSelectedPayment(null);
+          }}
+          title="Delete Payment"
+        >
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800 text-sm">
+                <strong>Warning:</strong> This action cannot be undone. The payment record and receipt will be permanently deleted.
+              </p>
+            </div>
+
+            {selectedPayment && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Receipt:</span>
+                  <span className="font-medium">{selectedPayment.receiptNumber || `#${selectedPayment.id}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Fighter:</span>
+                  <span className="font-medium">{selectedPayment.fighter?.name || selectedPayment.fighterName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Amount:</span>
+                  <span className="font-medium">{selectedPayment.amount.toFixed(2)} EGP</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Type:</span>
+                  <span className="font-medium">{getPaymentTypeLabel(selectedPayment.paymentType)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedPayment(null);
+                }}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Payment'
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
         </div>
       )}
