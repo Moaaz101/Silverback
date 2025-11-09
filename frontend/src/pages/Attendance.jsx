@@ -262,9 +262,9 @@ export default function AttendancePage() {
                               </div>
                             </div>
                             <span 
-                              className={`px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ml-2 ${getStatusColor(attendanceData[fighter.id])}`}
+                              className={`px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ml-2 ${getStatusColor(attendanceData[fighter.id] || 'not_marked')}`}
                             >
-                              {attendanceData[fighter.id] === 'not_marked' 
+                              {!attendanceData[fighter.id] || attendanceData[fighter.id] === 'not_marked' 
                                 ? 'Not marked' 
                                 : attendanceData[fighter.id].charAt(0).toUpperCase() + attendanceData[fighter.id].slice(1)
                               }
