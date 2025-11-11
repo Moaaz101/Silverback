@@ -45,7 +45,7 @@ const formatTime = (time24h) => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white leading-tight">{coach.name}</h2>
-              <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium mt-1 bg-blue-500/20 text-blue-300">
+              <span className="inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-medium mt-1 bg-blue-100 text-blue-800">
                 Coach
               </span>
             </div>

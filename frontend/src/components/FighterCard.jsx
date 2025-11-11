@@ -1,47 +1,11 @@
 import { useState } from "react"
 import { User, Calendar, Target, UserCheck, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
 import { Link } from "react-router-dom"
+import { getSubscriptionStatus } from "../utils/subscriptionStatus"
 
 export default function FighterCard({ fighter }) {
   const [isExpanded, setIsExpanded] = useState(false)
-
-  const getStatusInfo = (fighter) => {
-    const status = fighter.subscriptionStatus;
-    
-    // If we don't have subscription status yet, fall back to sessions only
-    if (!status) {
-      if (fighter.sessionsLeft > 5) {
-        return { className: "bg-green-500/20 text-green-300", text: "Active" };
-      } else if (fighter.sessionsLeft > 0) {
-        return { className: "bg-yellow-500/20 text-yellow-300", text: "Low Sessions" };
-      } else {
-        return { className: "bg-red-500/20 text-red-300", text: "Expired" };
-      }
-    }
-    
-    // Check dual expiration system
-    if (status.isExpired) {
-      return {
-        className: "bg-red-500/20 text-red-300",
-        text: "Expired"
-      };
-    } else if (status.isExpiringSoon) {
-      return {
-        className: "bg-orange-500/20 text-orange-300",
-        text: `Expiring Soon`
-      };
-    } else if (fighter.sessionsLeft <= 5 && fighter.sessionsLeft > 0) {
-      return {
-        className: "bg-yellow-500/20 text-yellow-300",
-        text: "Low Sessions"
-      };
-    } else {
-      return {
-        className: "bg-green-500/20 text-green-300",
-        text: "Active"
-      };
-    }
-  }
+  const status = getSubscriptionStatus(fighter)
   
   const formatExpirationDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -51,8 +15,6 @@ export default function FighterCard({ fighter }) {
     });
   };
 
-  const status = getStatusInfo(fighter)
-  
   // Get package type badge
   const packageBadge = fighter.subscriptionType === 'private' 
     ? { text: 'Private', className: 'bg-purple-500/30 text-purple-200' }
@@ -73,11 +35,11 @@ export default function FighterCard({ fighter }) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white leading-tight">{fighter.name}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className={`inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-medium ${status.bgClass} ${status.textClass}`}>
                   {status.text}
                 </span>
-                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${packageBadge.className}`}>
+                <span className={`inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-medium ${packageBadge.className}`}>
                   {packageBadge.text}
                 </span>
               </div>

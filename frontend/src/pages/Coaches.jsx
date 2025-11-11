@@ -103,7 +103,7 @@ export default function CoachesPage() {
           <button
             onClick={() => setIsCreateModalOpen(true)}
             disabled={isSubmitting}
-            className="flex items-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-6 py-3 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-medium shadow-lg hover:shadow-xl border border-[#5a3660]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-8 py-3.5 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-semibold shadow-xl hover:shadow-2xl border-2 border-white/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 active:scale-100 ring-2 ring-[#492e51]/30 ring-offset-2"
           >
             <Plus className="w-5 h-5" />
             <span>Add Coach</span>

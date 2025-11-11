@@ -126,7 +126,7 @@ export default function PrivateSessionsPage() {
             <div className="flex items-center gap-3">
               <Link
                 to="/private-sessions/history"
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-medium shadow-md hover:shadow-lg whitespace-nowrap"
+                className="flex items-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-8 py-3.5 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-semibold shadow-xl hover:shadow-2xl border-2 border-white/30 whitespace-nowrap transform hover:scale-105 active:scale-100 ring-2 ring-[#492e51]/30 ring-offset-2"
               >
                 <History className="w-5 h-5" />
                 <span>View History</span>
