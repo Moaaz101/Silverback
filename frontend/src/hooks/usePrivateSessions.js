@@ -43,9 +43,8 @@ export function usePrivateSessions() {
    * @param {Object} sessionData - Session data
    * @param {number} sessionData.fighterId - Fighter ID
    * @param {string} sessionData.date - Date in YYYY-MM-DD format
-   * @param {string} sessionData.status - Session status (present/absent/late)
+   * @param {string} sessionData.status - Session status (always 'present' for private)
    * @param {string} sessionData.notes - Session notes
-   * @param {string} sessionData.duration - Session duration in minutes
    * @param {string} sessionData.createdBy - Username of admin recording
    * @returns {Promise<Object>} Created session data
    */
@@ -75,6 +74,7 @@ export function usePrivateSessions() {
    * Fetch private session history with filters
    * @param {Object} filters - Optional filters
    * @param {number} filters.fighterId - Filter by fighter ID
+   * @param {number} filters.coachId - Filter by coach ID
    * @param {string} filters.startDate - Filter by start date
    * @param {string} filters.endDate - Filter by end date
    * @param {number} filters.limit - Limit number of results
@@ -88,6 +88,7 @@ export function usePrivateSessions() {
       // Build query params
       const params = new URLSearchParams();
       if (filters.fighterId) params.append('fighterId', filters.fighterId);
+      if (filters.coachId) params.append('coachId', filters.coachId);
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.limit) params.append('limit', filters.limit);

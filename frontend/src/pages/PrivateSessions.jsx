@@ -75,16 +75,15 @@ export default function PrivateSessionsPage() {
     setShowModal(true);
   };
 
-  const handleSubmit = async (sessionData) => {
+  const handleSubmit = async () => {
     setSubmitting(true);
     
     try {
       await recordPrivateSession({
         fighterId: selectedFighter.id,
         date: selectedDate,
-        status: sessionData.status,
-        notes: sessionData.notes || `Private session (${sessionData.duration} min)`,
-        duration: sessionData.duration,
+        status: 'present', // Private sessions are always attended
+        notes: `Private session`,
         createdBy: user?.username || 'admin'
       });
 

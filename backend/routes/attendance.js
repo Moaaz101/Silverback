@@ -604,7 +604,7 @@ router.delete('/:id', async (req, res) => {
 router.get('/private', async (req, res) => {
   try {
     const prisma = req.prisma;
-    const { fighterId, startDate, endDate, limit } = req.query;
+    const { fighterId, coachId, startDate, endDate, limit } = req.query;
     
     // Build where clause
     const where = {
@@ -617,6 +617,14 @@ router.get('/private', async (req, res) => {
         return res.status(400).json({ error: validation.error });
       }
       where.fighterId = validation.id;
+    }
+
+    if (coachId) {
+      const validation = validateId(coachId);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+      where.coachId = validation.id;
     }
     
     if (startDate || endDate) {
@@ -776,12 +784,12 @@ router.get('/:id', async (req, res) => {
 router.post('/private', async (req, res) => {
   try {
     const prisma = req.prisma;
-    const { fighterId, date, status, notes, createdBy, duration } = req.body;
+    const { fighterId, date, createdBy } = req.body;
     
     // Validate inputs
     const validationErrors = validateAttendanceData({ 
       fighterId, 
-      status: status || 'present',
+      status: 'present', // Private sessions are always attended
       sessionType: 'private',
       createdBy 
     });
@@ -827,9 +835,6 @@ router.post('/private', async (req, res) => {
         throw new Error(`A session for ${fighter.name} is already recorded on this date. Please edit or delete the existing record.`);
       }
 
-      const shouldDeduct = status === 'present' || status === 'late';
-      let sessionAdjustment = null;
-
       // Create attendance record
       const attendance = await tx.attendance.create({
         data: {
@@ -838,35 +843,35 @@ router.post('/private', async (req, res) => {
           coachId: fighter.coachId || 0,
           coachName: fighter.coach?.name || 'Unassigned',
           date: attendanceDate,
-          status: status || 'present',
+          status: 'present', // Private sessions are always attended
           sessionType: 'private',
-          notes: notes || (duration ? `Private session (${duration} min)` : 'Private session'),
+          notes: 'Private session',
           createdBy
         }
       });
 
-      // Handle session deduction if needed
-      if (shouldDeduct) {
-        if (fighter.sessionsLeft > 0) {
-          const updatedSessionsLeft = fighter.sessionsLeft - 1;
-          await tx.fighter.update({
-            where: { id: fighterId },
-            data: { sessionsLeft: updatedSessionsLeft }
-          });
-          
-          // Re-fetch for accuracy
-          const updatedFighter = await tx.fighter.findUnique({
-            where: { id: fighterId },
-            select: { sessionsLeft: true }
-          });
-          
-          sessionAdjustment = {
-            sessionAdjustment: -1,
-            newSessionsLeft: updatedFighter.sessionsLeft
-          };
-        } else {
-          throw new Error(`${fighter.name} has no sessions left`);
-        }
+      // Deduct session count
+      let sessionAdjustment = null;
+      
+      if (fighter.sessionsLeft > 0) {
+        const updatedSessionsLeft = fighter.sessionsLeft - 1;
+        await tx.fighter.update({
+          where: { id: fighterId },
+          data: { sessionsLeft: updatedSessionsLeft }
+        });
+        
+        // Re-fetch for accuracy
+        const updatedFighter = await tx.fighter.findUnique({
+          where: { id: fighterId },
+          select: { sessionsLeft: true }
+        });
+        
+        sessionAdjustment = {
+          sessionAdjustment: -1,
+          newSessionsLeft: updatedFighter.sessionsLeft
+        };
+      } else {
+        throw new Error(`${fighter.name} has no sessions left`);
       }
 
       return {

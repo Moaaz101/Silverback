@@ -192,7 +192,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
             </div>
             <div>
               <h3 className="font-semibold text-lg text-gray-900">New Signup</h3>
-              <p className="text-gray-600 text-sm">Register a new fighter with initial payment</p>
+              <p className="text-gray-600 text-sm">Register a new fighter</p>
             </div>
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
             </div>
             <div>
               <h3 className="font-semibold text-lg text-gray-900">Subscription Renewal</h3>
-              <p className="text-gray-600 text-sm">Renew an existing fighter's subscription</p>
+              <p className="text-gray-600 text-sm">Renew an existing fighter</p>
             </div>
           </div>
         </div>
@@ -234,7 +234,7 @@ export default function NewPaymentForm({ onClose, onPaymentCreated, currentAdmin
             </div>
             <div>
               <h3 className="font-semibold text-lg text-gray-900">Add Sessions</h3>
-              <p className="text-gray-600 text-sm">Add more sessions to an existing fighter</p>
+              <p className="text-gray-600 text-sm">Add more sessions to a fighter</p>
             </div>
           </div>
         </div>

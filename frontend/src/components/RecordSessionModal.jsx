@@ -19,11 +19,6 @@ export default function RecordSessionModal({
   onClose, 
   isSubmitting 
 }) {
-  const [sessionData, setSessionData] = useState({
-    status: 'present',
-    notes: '',
-    duration: '60'
-  });
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -31,7 +26,7 @@ export default function RecordSessionModal({
     setError(null); // Clear previous errors
     
     try {
-      await onSubmit(sessionData);
+      await onSubmit({});
       // If successful, modal will be closed by parent
     } catch (err) {
       // Display error in modal instead of crashing
@@ -85,78 +80,6 @@ export default function RecordSessionModal({
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#492e51] focus:border-transparent outline-none"
-            />
-          </div>
-
-          {/* Duration */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Duration (minutes)
-            </label>
-            <select
-              value={sessionData.duration}
-              onChange={(e) => setSessionData({...sessionData, duration: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#492e51] focus:border-transparent outline-none"
-            >
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">60 minutes</option>
-              <option value="90">90 minutes</option>
-              <option value="120">120 minutes</option>
-            </select>
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <div className="flex gap-3">
-              <label className={`flex-1 flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                sessionData.status === 'present' 
-                  ? 'border-green-500 bg-green-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}>
-                <input
-                  type="radio"
-                  name="status"
-                  value="present"
-                  checked={sessionData.status === 'present'}
-                  onChange={(e) => setSessionData({...sessionData, status: e.target.value})}
-                  className="sr-only"
-                />
-                <span className="font-medium">Attended</span>
-              </label>
-              
-              <label className={`flex-1 flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                sessionData.status === 'absent' 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}>
-                <input
-                  type="radio"
-                  name="status"
-                  value="absent"
-                  checked={sessionData.status === 'absent'}
-                  onChange={(e) => setSessionData({...sessionData, status: e.target.value})}
-                  className="sr-only"
-                />
-                <span className="font-medium">Absent</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (optional)
-            </label>
-            <textarea
-              value={sessionData.notes}
-              onChange={(e) => setSessionData({...sessionData, notes: e.target.value})}
-              rows={3}
-              placeholder="e.g., Worked on technique, great progress..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#492e51] focus:border-transparent outline-none resize-none"
             />
           </div>
 
