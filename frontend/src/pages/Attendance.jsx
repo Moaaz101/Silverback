@@ -160,7 +160,6 @@ export default function AttendancePage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Attendance</h1>
-              <p className="text-gray-500 mt-1">Track daily attendance for all sessions</p>
             </div>
             
             {/* Date Picker and Submit Button */}

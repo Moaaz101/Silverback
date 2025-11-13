@@ -119,7 +119,6 @@ export default function PrivateSessionsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Private Sessions</h1>
-              <p className="text-gray-500 mt-1">Record 1-on-1 training sessions</p>
             </div>
             
             {/* Date Picker & History Link */}
@@ -129,7 +128,7 @@ export default function PrivateSessionsPage() {
                 className="flex items-center space-x-2 bg-gradient-to-r from-[#492e51] to-[#5a3660] text-white px-8 py-3.5 rounded-lg hover:from-[#5a3660] hover:to-[#6b4170] transition-all duration-300 font-semibold shadow-xl hover:shadow-2xl border-2 border-white/30 whitespace-nowrap transform hover:scale-105 active:scale-100 ring-2 ring-[#492e51]/30 ring-offset-2"
               >
                 <History className="w-5 h-5" />
-                <span>View History</span>
+                <span>History</span>
               </Link>
               
               <div className="flex items-center space-x-2">
@@ -137,7 +136,7 @@ export default function PrivateSessionsPage() {
                 <select
                   value={selectedCoach}
                   onChange={(e) => setSelectedCoach(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#492e51] focus:border-transparent outline-none"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#492e51] focus:border-transparent outline-none"
                 >
                   <option value="">All Coaches</option>
                   {coaches && coaches.map(coach => (
